@@ -11,12 +11,10 @@ export function QuestionCard({ text }: Props) {
       initial={{ opacity: 0, y: 8, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.2 }}
-      className="rounded-3xl bg-white px-4 py-4 text-center text-slate-900 shadow-lg"
+      className="question-card rounded-3xl bg-white text-center text-slate-900 shadow-[0_20px_48px_rgba(255,255,255,0.16)]"
     >
-      <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-        Math Challenge
-      </div>
-      <div className="mt-2 text-3xl font-black leading-tight">{text}</div>
+      <div className="question-eyebrow font-black uppercase text-slate-500">🧠</div>
+      <div className="question-text mt-1.5 font-black text-slate-950">{text}</div>
     </motion.div>
   );
 }

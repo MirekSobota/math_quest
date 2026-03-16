@@ -1,6 +1,19 @@
 import type { Enemy } from "../../types/game";
 import { starterEnemies, bossEnemies } from "../../data/enemies";
-import { getRequiredHitsForEnemy, isBossEnemyInStage } from "./stage.utils";
+import {
+  getEnemyBaseHp,
+  getRequiredHitsForEnemy,
+  isBossEnemyInStage,
+} from "./stage.utils";
+
+function getBossEnemy(stage: number) {
+  return bossEnemies[Math.floor((stage - 1) / 5) % bossEnemies.length];
+}
+
+function getNormalEnemy(stage: number, stageEnemyIndex: number) {
+  const index = ((stage - 1) * 3 + (stageEnemyIndex - 1)) % starterEnemies.length;
+  return starterEnemies[index];
+}
 
 export function getEnemyForStageSlot(
   stage: number,
@@ -8,33 +21,17 @@ export function getEnemyForStageSlot(
   stageEnemyCount: number,
 ): Enemy {
   const isBoss = isBossEnemyInStage(stage, stageEnemyIndex, stageEnemyCount);
-
-  if (isBoss) {
-    const boss = bossEnemies[(Math.floor(stage / 5) - 1) % bossEnemies.length];
-    const extraHp = Math.floor(stage / 4);
-
-    return {
-      ...boss,
-      hp: boss.maxHp + extraHp * 3,
-      maxHp: boss.maxHp + extraHp * 3,
-      isBoss: true,
-      requiredCorrectAnswers: getRequiredHitsForEnemy(true),
-      xpReward: 30 + stage * 3,
-    };
-  }
-
-  const biomeIndex = stage <= 5 ? 0 : stage <= 10 ? 4 : stage <= 15 ? 8 : 0;
-
-  const pool = starterEnemies.slice(biomeIndex, biomeIndex + 4);
-  const enemy = pool[(stageEnemyIndex - 1) % pool.length] ?? starterEnemies[0];
-  const extraHp = Math.floor(stage / 3);
+  const sourceEnemy = isBoss
+    ? getBossEnemy(stage)
+    : getNormalEnemy(stage, stageEnemyIndex);
+  const maxHp = getEnemyBaseHp(stage, isBoss);
 
   return {
-    ...enemy,
-    hp: enemy.maxHp + extraHp,
-    maxHp: enemy.maxHp + extraHp,
-    isBoss: false,
-    requiredCorrectAnswers: getRequiredHitsForEnemy(false),
-    xpReward: 8 + stage,
+    ...sourceEnemy,
+    hp: maxHp,
+    maxHp,
+    isBoss,
+    requiredCorrectAnswers: getRequiredHitsForEnemy(isBoss),
+    xpReward: isBoss ? 28 + stage * 3 : 10 + stage * 2,
   };
 }

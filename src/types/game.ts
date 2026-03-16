@@ -41,12 +41,17 @@ export type Player = {
   damage: number;
 };
 
+export type UpgradeAccent = "emerald" | "rose" | "amber" | "violet";
+
 export type Upgrade = {
   id: string;
   title: string;
   description: string;
   type: "heal" | "damage" | "coins";
   value: number;
+  icon?: string;
+  shortLabel?: string;
+  accent?: UpgradeAccent;
 };
 
 export type SaveData = {
@@ -65,6 +70,9 @@ export type SaveData = {
 
 export type GameState = {
   screen: GameScreen;
+
+  bestScore: number;
+  stars: Record<number, number>;
 
   playerLevel: number;
   playerXp: number;

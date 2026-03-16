@@ -1,5 +1,9 @@
-import { loadSave } from "../../features/progression/storage";
+import { uiIcons } from "../../data/uiAssets";
 import { getRequiredXpForLevel } from "../../features/progression/xp.utils";
+import { GameIcon } from "../ui/GameIcon";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { Screen } from "../layout/Screen";
 
 type Props = {
   player: {
@@ -16,6 +20,8 @@ type Props = {
   playerLevel: number;
   playerXp: number;
   unlockedStage: number;
+  bestScore: number;
+  stars: Record<number, number>;
   onBack: () => void;
 };
 
@@ -29,111 +35,122 @@ export function StatsScreen({
   playerLevel,
   playerXp,
   unlockedStage,
+  bestScore,
+  stars,
   onBack,
 }: Props) {
-  const save = loadSave();
-  const totalStars = countTotalStars(save.stars);
+  const totalStars = countTotalStars(stars);
   const requiredXp = getRequiredXpForLevel(playerLevel);
 
   return (
-    <div className="flex min-h-screen flex-col gap-6 p-3">
-      <div className="rounded-3xl bg-white/10 p-5 text-center">
-        <h2 className="text-3xl font-black">Hero Profile</h2>
-        <div className="mt-2 text-white/70">Your progress and upgrades</div>
+    <Screen>
+      <Card tone="strong">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-3xl bg-white/8 p-3">
+              <GameIcon src={uiIcons.heart} alt="Hero" size="lg" />
+            </div>
+            <h2 className="compact-header-title text-3xl font-black md:text-4xl">Hero</h2>
+          </div>
+          <div className="rounded-2xl bg-white/10 px-4 py-3 text-lg font-bold">⭐ {player.coins}</div>
+        </div>
+      </Card>
+
+      <div className="stats-layout grid gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Card>
+              <div className="text-sm text-white/70">Lv</div>
+              <div className="mt-2 text-3xl font-black">{playerLevel}</div>
+            </Card>
+
+            <Card>
+              <div className="text-sm text-white/70">Stage</div>
+              <div className="mt-2 text-3xl font-black">{unlockedStage}</div>
+            </Card>
+
+            <Card>
+              <div className="text-sm text-white/70">Best</div>
+              <div className="mt-2 text-3xl font-black">{bestScore}</div>
+            </Card>
+
+            <Card>
+              <div className="text-sm text-white/70">Stars</div>
+              <div className="mt-2 text-3xl font-black">{totalStars}</div>
+            </Card>
+          </div>
+
+          <Card>
+            <div className="flex items-center justify-between text-sm text-white/70">
+              <span>XP</span>
+              <span>
+                {playerXp}/{requiredXp}
+              </span>
+            </div>
+            <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-500"
+                style={{ width: `${Math.min(100, (playerXp / requiredXp) * 100)}%` }}
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-white/5 p-4 text-center">
+                <GameIcon src={uiIcons.heart} alt="HP" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">
+                  {player.hp}/{player.maxHp}
+                </div>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4 text-center">
+                <GameIcon src={uiIcons.attack} alt="Damage" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">{player.damage}</div>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4 text-center">
+                <GameIcon src={uiIcons.hint} alt="Hints" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">{upgrades.hint}</div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <Card>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <GameIcon src={uiIcons.heart} alt="Hearts" size="md" />
+                  <span className="font-bold text-white/75">Hearts</span>
+                </div>
+                <span className="font-black">Lv {upgrades.hp}</span>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <GameIcon src={uiIcons.attack} alt="Attack" size="md" />
+                  <span className="font-bold text-white/75">Attack</span>
+                </div>
+                <span className="font-black">Lv {upgrades.damage}</span>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <GameIcon src={uiIcons.hint} alt="Hints" size="md" />
+                  <span className="font-bold text-white/75">Hints</span>
+                </div>
+                <span className="font-black">Lv {upgrades.hint}</span>
+              </div>
+            </div>
+          </Card>
+
+          <Button onClick={onBack} variant="secondary" size="md" block>
+            ⬅ BACK
+          </Button>
+        </div>
       </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-3xl bg-white/10 p-4">
-          <div className="text-sm text-white/70">Player Level</div>
-          <div className="mt-2 text-3xl font-black">{playerLevel}</div>
-        </div>
-
-        <div className="rounded-3xl bg-white/10 p-4">
-          <div className="text-sm text-white/70">Unlocked Stage</div>
-          <div className="mt-2 text-3xl font-black">{unlockedStage}</div>
-        </div>
-
-        <div className="col-span-2 rounded-3xl bg-white/10 p-4">
-          <div className="text-sm text-white/70">XP Progress</div>
-          <div className="mt-2 text-lg font-bold">
-            {playerXp}/{requiredXp}
-          </div>
-          <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
-            <div
-              className="h-full rounded-full bg-violet-400"
-              style={{
-                width: `${Math.min(100, (playerXp / requiredXp) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="rounded-3xl bg-white/10 p-4">
-          <div className="text-sm text-white/70">Best Score</div>
-          <div className="mt-2 text-3xl font-black">{save.bestScore}</div>
-        </div>
-
-        <div className="rounded-3xl bg-white/10 p-4">
-          <div className="text-sm text-white/70">Total Stars</div>
-          <div className="mt-2 text-3xl font-black">⭐ {totalStars}</div>
-        </div>
-
-        <div className="col-span-2 rounded-3xl bg-white/10 p-4">
-          <div className="text-sm text-white/70">Coins</div>
-          <div className="mt-2 text-3xl font-black">⭐ {player.coins}</div>
-        </div>
-      </div>
-
-      <div className="rounded-3xl bg-white/10 p-5">
-        <div className="text-xl font-bold">Current Stats</div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3">
-          <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-            <span className="text-white/70">Hearts</span>
-            <span className="font-bold">
-              {"❤️".repeat(player.hp)} / {"❤️".repeat(player.maxHp)}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-            <span className="text-white/70">Damage</span>
-            <span className="font-bold">⚔️ {player.damage}</span>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-            <span className="text-white/70">Hints per Stage</span>
-            <span className="font-bold">💡 {upgrades.hint}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-3xl bg-white/10 p-5">
-        <div className="text-xl font-bold">Upgrades</div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3">
-          <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-            <span className="text-white/70">HP Upgrade</span>
-            <span className="font-bold">Lv {upgrades.hp}</span>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-            <span className="text-white/70">Damage Upgrade</span>
-            <span className="font-bold">Lv {upgrades.damage}</span>
-          </div>
-
-          <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-            <span className="text-white/70">Hint Upgrade</span>
-            <span className="font-bold">Lv {upgrades.hint}</span>
-          </div>
-        </div>
-      </div>
-
-      <button
-        onClick={onBack}
-        className="mt-auto rounded-2xl bg-white/10 py-3 font-bold hover:bg-white/15"
-      >
-        Back
-      </button>
-    </div>
+    </Screen>
   );
 }

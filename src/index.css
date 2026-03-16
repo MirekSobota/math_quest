@@ -4,11 +4,376 @@ html,
 body,
 #root {
   margin: 0;
+  height: 100%;
   min-height: 100%;
 }
 
+html,
 body {
-  font-family: Arial, sans-serif;
+  overscroll-behavior: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --app-pad: 12px;
+  --app-gap: 16px;
+  --card-pad: 20px;
+  --card-radius: 24px;
+}
+
+body {
+  overflow: hidden;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   background: #0f172a;
   color: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-scrollable-screen {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.screen-shell {
+  gap: var(--app-gap);
+  padding: var(--app-pad);
+}
+
+.card-surface {
+  border-radius: var(--card-radius);
+  padding: var(--card-pad);
+}
+
+.answer-grid,
+.battle-layout,
+.menu-hero-grid,
+.game-two-pane,
+.shop-grid,
+.stats-layout,
+.reward-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.button-core {
+  isolation: isolate;
+}
+
+.btn-attention {
+  position: relative;
+  overflow: hidden;
+  animation: buttonPulse 1.8s ease-in-out infinite;
+}
+
+.btn-attention::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at top center, rgba(255, 255, 255, 0.18), transparent 58%);
+  opacity: 0.7;
+  animation: innerGlow 1.7s ease-in-out infinite;
+}
+
+.btn-attention::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 16%, rgba(255, 255, 255, 0.14) 42%, transparent 68%);
+  transform: translateX(-130%);
+  opacity: 0.7;
+  animation: buttonSparkle 2.6s ease-in-out infinite;
+}
+
+.reward-choice {
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+
+.reward-choice:active {
+  transform: scale(0.985);
+}
+
+.kid-cta {
+  animation: ctaBounce 1.8s ease-in-out infinite;
+}
+
+.answer-pop {
+  animation: answerBreath 2.1s ease-in-out infinite;
+}
+
+.play-button-main {
+  min-height: 74px;
+}
+
+.battle-side-panel {
+  min-width: 0;
+}
+
+.battle-enemy-image {
+  max-height: min(24vh, 190px);
+}
+
+@keyframes buttonSparkle {
+  0%,
+  72%,
+  100% {
+    transform: translateX(-130%);
+  }
+  86% {
+    transform: translateX(135%);
+  }
+}
+
+@keyframes innerGlow {
+  0%,
+  100% {
+    opacity: 0.56;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+
+@keyframes buttonPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 12px 30px rgba(15, 23, 42, 0.22),
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow:
+      0 16px 34px rgba(15, 23, 42, 0.28),
+      0 0 0 1px rgba(255, 255, 255, 0.16) inset;
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes ctaBounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.015);
+  }
+}
+
+@keyframes answerBreath {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse), (min-width: 960px) {
+  .screen-shell {
+    gap: 12px;
+  }
+
+  .menu-hero-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.75fr);
+  }
+
+  .game-two-pane {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+    align-items: stretch;
+  }
+
+  .shop-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-layout {
+    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+    align-items: stretch;
+  }
+
+  .battle-layout {
+    grid-template-columns: minmax(0, 1.05fr) minmax(330px, 0.95fr);
+    align-items: stretch;
+  }
+
+  .reward-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) {
+  :root {
+    --app-pad: 8px;
+    --app-gap: 10px;
+    --card-pad: 16px;
+    --card-radius: 22px;
+  }
+
+  .compact-landscape-gap {
+    gap: 10px;
+  }
+
+  .battle-topbar {
+    padding-block: 7px;
+  }
+
+  .map-node {
+    min-height: 74px;
+  }
+
+  .question-card {
+    padding: 14px 14px 16px;
+  }
+
+  .question-eyebrow {
+    font-size: 0.86rem;
+    letter-spacing: 0.18em;
+  }
+
+  .question-text {
+    font-size: clamp(1.9rem, 3vw, 2.8rem);
+    line-height: 1.04;
+  }
+
+  .answer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .answer-button {
+    min-height: 64px;
+  }
+
+  .battle-enemy-image {
+    max-height: min(22vh, 170px);
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 760px) {
+  :root {
+    --app-pad: 6px;
+    --app-gap: 8px;
+    --card-pad: 14px;
+    --card-radius: 20px;
+  }
+
+  .screen-shell {
+    gap: 8px;
+  }
+
+  .compact-landscape-gap {
+    gap: 8px;
+  }
+
+  .compact-header-title {
+    font-size: 1.65rem;
+    line-height: 1.05;
+  }
+
+  .compact-header-copy,
+  .compact-copy {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .compact-chip {
+    padding: 10px 12px;
+  }
+
+  .map-node {
+    min-height: 64px;
+  }
+
+  .play-button-main {
+    min-height: 64px;
+    font-size: 1.25rem;
+  }
+
+  .menu-logo {
+    height: 60px;
+    width: 60px;
+  }
+
+  .question-card {
+    padding: 12px 12px 14px;
+  }
+
+  .question-text {
+    font-size: clamp(1.55rem, 2.5vw, 2.3rem);
+  }
+
+  .answer-button {
+    min-height: 54px;
+    padding: 10px 12px;
+  }
+
+  .battle-enemy-image {
+    max-height: min(18vh, 132px);
+  }
+
+  .battle-topbar {
+    padding-inline: 12px;
+  }
+}
+
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 580px) {
+  :root {
+    --app-pad: 4px;
+    --app-gap: 6px;
+    --card-pad: 12px;
+    --card-radius: 18px;
+  }
+
+  .battle-topbar {
+    padding-block: 5px;
+  }
+
+  .question-card {
+    padding: 10px 10px 12px;
+  }
+
+  .question-text {
+    font-size: clamp(1.35rem, 2.1vw, 2rem);
+  }
+
+  .answer-grid {
+    gap: 6px;
+  }
+
+  .answer-button {
+    min-height: 48px;
+    border-radius: 18px;
+  }
+
+  .battle-enemy-image {
+    max-height: min(16vh, 112px);
+  }
 }

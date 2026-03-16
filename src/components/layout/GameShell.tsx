@@ -25,23 +25,21 @@ export function GameShell({ children }: Props) {
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden text-white">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${background})` }}
-      />
+      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${background})` }} />
 
-      <div className="absolute inset-0 bg-slate-950/45" />
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-900/25 to-slate-950/55" />
+      <div className="absolute inset-0 bg-slate-950/58" />
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-950/68 via-slate-900/34 to-slate-950/72" />
 
       <div
-        className="relative mx-auto w-full max-w-md"
+        className="app-wide-shell relative mx-auto flex h-[100dvh] w-full"
         style={{
-          minHeight: "100dvh",
-          paddingTop: "max(10px, env(safe-area-inset-top))",
-          paddingBottom: "max(10px, env(safe-area-inset-bottom))",
+          paddingTop: "max(6px, env(safe-area-inset-top))",
+          paddingBottom: "max(6px, env(safe-area-inset-bottom))",
+          paddingLeft: "max(6px, env(safe-area-inset-left))",
+          paddingRight: "max(6px, env(safe-area-inset-right))",
         }}
       >
-        {children}
+        <div className="flex h-full min-h-0 w-full flex-1">{children}</div>
       </div>
     </div>
   );

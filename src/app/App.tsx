@@ -1,20 +1,26 @@
 import { useEffect } from "react";
 import { GameShell } from "../components/layout/GameShell";
-import { MenuScreen } from "../components/screens/MenuScreen";
+import { MobileLandscapeGuard } from "../components/mobile/MobileLandscapeGuard";
+import { RewardModal } from "../components/game/RewardModal";
 import { BattleScreen } from "../components/screens/BattleScreen";
 import { GameOverScreen } from "../components/screens/GameOverScreen";
-import { RewardModal } from "../components/game/RewardModal";
-import { MapScreen } from "../components/screens/MapScreen";
 import { LevelCompleteScreen } from "../components/screens/LevelCompleteScreen";
+import { MapScreen } from "../components/screens/MapScreen";
+import { MenuScreen } from "../components/screens/MenuScreen";
 import { ShopScreen } from "../components/screens/ShopScreen";
 import { StatsScreen } from "../components/screens/StatsScreen";
+import {
+  preloadGameAssets,
+  preloadStageAssets,
+} from "../features/assets/preloadGameAssets";
+import { useImmersiveMode } from "../features/mobile/useImmersiveMode";
 import { useGameStore } from "../store/gameStore";
-import { loadSave } from "../features/progression/storage";
-import { preloadGameAssets } from "../features/assets/preloadGameAssets";
 
 export default function App() {
   const {
     screen,
+    bestScore,
+    stars,
     playerLevel,
     playerXp,
     unlockedStage,
@@ -25,6 +31,7 @@ export default function App() {
     enemy,
     currentQuestion,
     rewardOptions,
+    activeSpell,
     lastHit,
     floatingMessage,
     earnedStars,
@@ -33,8 +40,6 @@ export default function App() {
     correctAnswersOnCurrentEnemy,
     stageEnemyIndex,
     stageEnemyCount,
-    lessonQuestionIndex,
-    lessonQuestionCount,
     hintCharges,
     hiddenAnswers,
     startGame,
@@ -50,88 +55,118 @@ export default function App() {
     buyItem,
   } = useGameStore();
 
-  const { bestScore } = loadSave();
+  const {
+    isMobile,
+    isFullscreen,
+    shouldShowRotateOverlay,
+    enableImmersiveMode,
+  } = useImmersiveMode();
 
   useEffect(() => {
-    preloadGameAssets();
+    void preloadGameAssets();
   }, []);
 
+  useEffect(() => {
+    void preloadStageAssets(selectedStage);
+  }, [selectedStage]);
+
+  useEffect(() => {
+    if (isMobile) {
+      void enableImmersiveMode();
+    }
+  }, [enableImmersiveMode, isMobile, screen]);
+
   return (
-    <GameShell>
-      {screen === "menu" && (
-        <MenuScreen onStart={startGame} bestScore={bestScore} />
-      )}
+    <>
+      <GameShell>
+        {screen === "menu" && <MenuScreen onStart={startGame} bestScore={bestScore} />}
 
-      {screen === "map" && (
-        <MapScreen
-          unlockedStage={unlockedStage}
-          selectedStage={selectedStage}
-          playerLevel={playerLevel}
-          playerXp={playerXp}
-          coins={player.coins}
-          onSelectStage={selectStage}
-          onPlay={startStage}
-          onShop={openShop}
-          onStats={openStats}
-        />
-      )}
+        {screen === "map" && (
+          <MapScreen
+            unlockedStage={unlockedStage}
+            selectedStage={selectedStage}
+            playerLevel={playerLevel}
+            playerXp={playerXp}
+            coins={player.coins}
+            stars={stars}
+            onSelectStage={selectStage}
+            onPlay={startStage}
+            onShop={openShop}
+            onStats={openStats}
+          />
+        )}
 
-      {screen === "shop" && (
-        <ShopScreen
-          coins={player.coins}
-          upgrades={upgrades}
-          onBuy={buyItem}
-          onBack={goToMap}
-        />
-      )}
+        {screen === "shop" && (
+          <ShopScreen
+            coins={player.coins}
+            upgrades={upgrades}
+            onBuy={buyItem}
+            onBack={goToMap}
+          />
+        )}
 
-      {screen === "stats" && (
-        <StatsScreen
-          player={player}
-          upgrades={upgrades}
-          playerLevel={playerLevel}
-          playerXp={playerXp}
-          unlockedStage={unlockedStage}
-          onBack={goToMap}
-        />
-      )}
+        {screen === "stats" && (
+          <StatsScreen
+            player={player}
+            upgrades={upgrades}
+            playerLevel={playerLevel}
+            playerXp={playerXp}
+            unlockedStage={unlockedStage}
+            bestScore={bestScore}
+            stars={stars}
+            onBack={goToMap}
+          />
+        )}
 
-      {screen === "levelcomplete" && completedStage !== null && (
-        <LevelCompleteScreen
-          level={completedStage}
-          stars={earnedStars}
-          wasLatest={completedWasLatest}
-          onContinue={continueAfterLevelComplete}
-        />
-      )}
+        {screen === "levelcomplete" && completedStage !== null && (
+          <LevelCompleteScreen
+            key={`${completedStage}-${earnedStars}`}
+            level={completedStage}
+            stars={earnedStars}
+            wasLatest={completedWasLatest}
+            onContinue={continueAfterLevelComplete}
+          />
+        )}
 
-      {screen === "gameover" && (
-        <GameOverScreen score={score} onRestart={startGame} />
-      )}
+        {screen === "gameover" && (
+          <GameOverScreen
+            score={score}
+            bestScore={bestScore}
+            playerLevel={playerLevel}
+            unlockedStage={unlockedStage}
+            onRestart={startGame}
+          />
+        )}
 
-      {screen === "reward" && (
-        <RewardModal options={rewardOptions} onPick={pickReward} />
-      )}
+        {screen === "reward" && <RewardModal options={rewardOptions} onPick={pickReward} />}
 
-      {screen === "battle" && enemy && currentQuestion && (
-        <BattleScreen
-          stage={selectedStage}
-          player={player}
-          enemy={enemy}
-          question={currentQuestion}
-          lastHit={lastHit}
-          floatingMessage={floatingMessage}
-          lessonQuestionIndex={lessonQuestionIndex}
-          lessonQuestionCount={lessonQuestionCount}
-          correctAnswersOnCurrentEnemy={correctAnswersOnCurrentEnemy}
-          stageEnemyIndex={stageEnemyIndex}
-          stageEnemyCount={stageEnemyCount}
-          hintCharges={hintCharges}
-          hiddenAnswers={hiddenAnswers}
-          onUseHint={useHint}
-          onAnswer={answerQuestion}
-        />
-      )}
-    </GameShell>
+        {screen === "battle" && enemy && currentQuestion && (
+          <BattleScreen
+            stage={selectedStage}
+            player={player}
+            enemy={enemy}
+            question={currentQuestion}
+            activeSpell={activeSpell}
+            lastHit={lastHit}
+            floatingMessage={floatingMessage}
+            correctAnswersOnCurrentEnemy={correctAnswersOnCurrentEnemy}
+            stageEnemyIndex={stageEnemyIndex}
+            stageEnemyCount={stageEnemyCount}
+            hintCharges={hintCharges}
+            hiddenAnswers={hiddenAnswers}
+            onUseHint={useHint}
+            onAnswer={answerQuestion}
+          />
+        )}
+      </GameShell>
+
+      <MobileLandscapeGuard
+        visible={shouldShowRotateOverlay}
+        isFullscreen={isFullscreen}
+        onEnable={() => {
+          void enableImmersiveMode();
+        }}
+      />
+    </>
   );
 }

@@ -1,0 +1,55 @@
+import type { Upgrade } from "../types/game";
+import { rewardTypeIcons } from "./uiAssets";
+
+export const rewardPool: Upgrade[] = [
+  {
+    id: "heal-small",
+    title: "Heart",
+    description: "+1 HP",
+    type: "heal",
+    value: 1,
+    icon: rewardTypeIcons.heal,
+    shortLabel: "+1",
+    accent: "rose",
+  },
+  {
+    id: "heal-big",
+    title: "Big Heart",
+    description: "+2 HP",
+    type: "heal",
+    value: 2,
+    icon: rewardTypeIcons.heal,
+    shortLabel: "+2",
+    accent: "emerald",
+  },
+  {
+    id: "damage-up",
+    title: "Attack",
+    description: "+1 DMG",
+    type: "damage",
+    value: 1,
+    icon: rewardTypeIcons.damage,
+    shortLabel: "+1",
+    accent: "violet",
+  },
+  {
+    id: "coin-boost",
+    title: "Prize",
+    description: "+10",
+    type: "coins",
+    value: 10,
+    icon: rewardTypeIcons.coins,
+    shortLabel: "+10",
+    accent: "amber",
+  },
+  {
+    id: "coin-burst",
+    title: "Big Prize",
+    description: "+18",
+    type: "coins",
+    value: 18,
+    icon: rewardTypeIcons.coins,
+    shortLabel: "+18",
+    accent: "amber",
+  },
+];

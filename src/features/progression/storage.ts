@@ -2,7 +2,7 @@ import type { SaveData } from "../../types/game";
 
 const STORAGE_KEY = "math-quest-save";
 
-const defaultSave: SaveData = {
+export const defaultSave: SaveData = {
   bestScore: 0,
   playerLevel: 1,
   playerXp: 0,
@@ -21,94 +21,91 @@ const defaultSave: SaveData = {
   },
 };
 
-export function loadSave(): SaveData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+function getStorage() {
+  if (typeof window === "undefined") return null;
 
-    if (!raw) return defaultSave;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function cloneDefaultSave(): SaveData {
+  return {
+    ...defaultSave,
+    stars: { ...defaultSave.stars },
+    upgrades: { ...defaultSave.upgrades },
+    player: { ...defaultSave.player },
+  };
+}
+
+export function loadSave(): SaveData {
+  const storage = getStorage();
+
+  if (!storage) {
+    return cloneDefaultSave();
+  }
+
+  try {
+    const raw = storage.getItem(STORAGE_KEY);
+
+    if (!raw) {
+      return cloneDefaultSave();
+    }
 
     const parsed = JSON.parse(raw);
+    const fallback = cloneDefaultSave();
+
+    const starsEntries = Object.entries(
+      parsed?.stars && typeof parsed.stars === "object" ? parsed.stars : {},
+    )
+      .map(([stage, value]) => [Number(stage), Number(value)] as const)
+      .filter(([stage, value]) => Number.isFinite(stage) && Number.isFinite(value));
 
     return {
-      bestScore:
-        typeof parsed?.bestScore === "number"
-          ? parsed.bestScore
-          : defaultSave.bestScore,
-
-      playerLevel:
-        typeof parsed?.playerLevel === "number"
-          ? parsed.playerLevel
-          : typeof parsed?.level === "number"
-            ? parsed.level
-            : defaultSave.playerLevel,
-
-      playerXp:
-        typeof parsed?.playerXp === "number"
-          ? parsed.playerXp
-          : typeof parsed?.xp === "number"
-            ? parsed.xp
-            : defaultSave.playerXp,
-
-      unlockedStage:
-        typeof parsed?.unlockedStage === "number"
-          ? parsed.unlockedStage
-          : typeof parsed?.level === "number"
-            ? parsed.level
-            : defaultSave.unlockedStage,
-
-      stars:
-        parsed?.stars && typeof parsed.stars === "object"
-          ? parsed.stars
-          : defaultSave.stars,
-
+      bestScore: normalizeNumber(parsed?.bestScore, fallback.bestScore),
+      playerLevel: normalizeNumber(
+        parsed?.playerLevel ?? parsed?.level,
+        fallback.playerLevel,
+      ),
+      playerXp: normalizeNumber(parsed?.playerXp ?? parsed?.xp, fallback.playerXp),
+      unlockedStage: normalizeNumber(
+        parsed?.unlockedStage ?? parsed?.level,
+        fallback.unlockedStage,
+      ),
+      stars: Object.fromEntries(starsEntries),
       upgrades: {
-        hp:
-          typeof parsed?.upgrades?.hp === "number"
-            ? parsed.upgrades.hp
-            : defaultSave.upgrades.hp,
-
-        damage:
-          typeof parsed?.upgrades?.damage === "number"
-            ? parsed.upgrades.damage
-            : defaultSave.upgrades.damage,
-
-        hint:
-          typeof parsed?.upgrades?.hint === "number"
-            ? parsed.upgrades.hint
-            : typeof parsed?.upgrades?.time === "number"
-              ? parsed.upgrades.time
-              : defaultSave.upgrades.hint,
+        hp: normalizeNumber(parsed?.upgrades?.hp, fallback.upgrades.hp),
+        damage: normalizeNumber(
+          parsed?.upgrades?.damage,
+          fallback.upgrades.damage,
+        ),
+        hint: normalizeNumber(
+          parsed?.upgrades?.hint ?? parsed?.upgrades?.time,
+          fallback.upgrades.hint,
+        ),
       },
-
       player: {
-        hp:
-          typeof parsed?.player?.hp === "number"
-            ? parsed.player.hp
-            : defaultSave.player.hp,
-
-        maxHp:
-          typeof parsed?.player?.maxHp === "number"
-            ? parsed.player.maxHp
-            : defaultSave.player.maxHp,
-
-        coins:
-          typeof parsed?.player?.coins === "number"
-            ? parsed.player.coins
-            : defaultSave.player.coins,
-
-        damage:
-          typeof parsed?.player?.damage === "number"
-            ? parsed.player.damage
-            : defaultSave.player.damage,
+        hp: normalizeNumber(parsed?.player?.hp, fallback.player.hp),
+        maxHp: normalizeNumber(parsed?.player?.maxHp, fallback.player.maxHp),
+        coins: normalizeNumber(parsed?.player?.coins, fallback.player.coins),
+        damage: normalizeNumber(parsed?.player?.damage, fallback.player.damage),
       },
     };
   } catch {
-    return defaultSave;
+    return cloneDefaultSave();
   }
 }
 
 export function saveProgress(data: SaveData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const storage = getStorage();
+  if (!storage) return;
+  storage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 export function updateBestScore(score: number) {
@@ -121,5 +118,7 @@ export function updateBestScore(score: number) {
 }
 
 export function clearSave() {
-  localStorage.removeItem(STORAGE_KEY);
+  const storage = getStorage();
+  if (!storage) return;
+  storage.removeItem(STORAGE_KEY);
 }

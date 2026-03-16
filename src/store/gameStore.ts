@@ -1,18 +1,15 @@
 import { create } from "zustand";
-import type { GameState, Upgrade } from "../types/game";
+import type { GameState, SaveData, Upgrade } from "../types/game";
 
+import { clampStage } from "../data/levels";
 import { generateQuestion } from "../features/questions/questionGenerator";
 import { getRewardOptions } from "../features/progression/reward.utils";
-import {
-  loadSave,
-  saveProgress,
-  updateBestScore,
-} from "../features/progression/storage";
+import { getStarsForMistakes, shouldOfferRewardForStage } from "../features/progression/progression.utils";
+import { loadSave, saveProgress } from "../features/progression/storage";
 
 import { getEnemyForStageSlot } from "../features/battle/battle.utils";
 import {
   getSpellBonusDamage,
-  getSpellLabel,
   getSpellTier,
 } from "../features/battle/spells.utils";
 
@@ -46,10 +43,28 @@ type GameStore = GameState & {
   pickReward: (upgrade: Upgrade) => void;
 };
 
-const save = loadSave();
+const initialSave = loadSave();
+const activeTimeouts = new Set<number>();
 
 function getAnswerCount() {
   return 4;
+}
+
+function clearScheduledUiEffects() {
+  for (const timeoutId of activeTimeouts) {
+    window.clearTimeout(timeoutId);
+  }
+
+  activeTimeouts.clear();
+}
+
+function scheduleUiEffect(callback: () => void, delay: number) {
+  const timeoutId = window.setTimeout(() => {
+    activeTimeouts.delete(timeoutId);
+    callback();
+  }, delay);
+
+  activeTimeouts.add(timeoutId);
 }
 
 function appendRecentQuestion(
@@ -59,27 +74,81 @@ function appendRecentQuestion(
   return [...recentQuestionKeys, key].slice(-5);
 }
 
+function createSavePayload(
+  state: Pick<
+    GameStore,
+    | "bestScore"
+    | "playerLevel"
+    | "playerXp"
+    | "unlockedStage"
+    | "stars"
+    | "upgrades"
+    | "player"
+  >,
+): SaveData {
+  return {
+    bestScore: state.bestScore,
+    playerLevel: state.playerLevel,
+    playerXp: state.playerXp,
+    unlockedStage: state.unlockedStage,
+    stars: state.stars,
+    upgrades: state.upgrades,
+    player: {
+      hp: state.player.hp,
+      maxHp: state.player.maxHp,
+      coins: state.player.coins,
+      damage: state.player.damage,
+    },
+  };
+}
+
+function getMapResetState(selectedStage: number, hintLevel: number) {
+  return {
+    enemy: null,
+    currentQuestion: null,
+    rewardOptions: [],
+    lastHit: null,
+    activeSpell: "none" as const,
+    floatingMessage: "",
+    mistakes: 0,
+    earnedStars: 0,
+    completedStage: null,
+    completedWasLatest: false,
+    correctAnswersOnCurrentEnemy: 0,
+    stageEnemyIndex: 1,
+    stageEnemyCount: getStageEnemyCount(selectedStage),
+    lessonQuestionIndex: 0,
+    lessonQuestionCount: getLessonQuestionCount(selectedStage),
+    recentQuestionKeys: [],
+    hintCharges: hintLevel,
+    hiddenAnswers: [],
+  };
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   screen: "menu",
 
-  playerLevel: save.playerLevel,
-  playerXp: save.playerXp,
+  bestScore: initialSave.bestScore,
+  stars: initialSave.stars,
 
-  unlockedStage: save.unlockedStage,
-  selectedStage: save.unlockedStage,
+  playerLevel: initialSave.playerLevel,
+  playerXp: initialSave.playerXp,
+
+  unlockedStage: initialSave.unlockedStage,
+  selectedStage: initialSave.unlockedStage,
 
   score: 0,
 
   player: {
-    hp: save.player.hp,
-    maxHp: save.player.maxHp,
+    hp: initialSave.player.hp,
+    maxHp: initialSave.player.maxHp,
     energy: 0,
-    coins: save.player.coins,
+    coins: initialSave.player.coins,
     streak: 0,
-    damage: save.player.damage,
+    damage: initialSave.player.damage,
   },
 
-  upgrades: save.upgrades,
+  upgrades: initialSave.upgrades,
 
   enemy: null,
   currentQuestion: null,
@@ -110,34 +179,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startGame: () => {
     sounds.click();
+    clearScheduledUiEffects();
+
     set((state) => ({
       screen: "map",
-      selectedStage: state.unlockedStage,
+      selectedStage: clampStage(state.unlockedStage),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
     }));
   },
 
   goToMap: () => {
+    clearScheduledUiEffects();
+
     set((state) => ({
       screen: "map",
-      enemy: null,
-      currentQuestion: null,
-      rewardOptions: [],
-      lastHit: null,
-      activeSpell: "none",
-      floatingMessage: "",
-      mistakes: 0,
-      selectedStage: state.unlockedStage,
-      earnedStars: 0,
-      completedStage: null,
-      completedWasLatest: false,
-      correctAnswersOnCurrentEnemy: 0,
-      stageEnemyIndex: 1,
-      stageEnemyCount: getStageEnemyCount(state.unlockedStage),
-      lessonQuestionIndex: 0,
-      lessonQuestionCount: getLessonQuestionCount(state.unlockedStage),
-      recentQuestionKeys: [],
-      hintCharges: state.upgrades.hint,
-      hiddenAnswers: [],
+      selectedStage: clampStage(state.unlockedStage),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
     }));
   },
 
@@ -153,28 +210,29 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   selectStage: (stage) => {
     const state = get();
-    if (stage > state.unlockedStage) return;
+    const nextStage = clampStage(stage);
+    if (nextStage > state.unlockedStage) return;
 
     sounds.click();
-    set({ selectedStage: stage });
+    set({ selectedStage: nextStage });
   },
 
   startStage: () => {
     const state = get();
-    const stageToPlay = state.selectedStage;
+    const stageToPlay = clampStage(state.selectedStage);
     const enemyCount = getStageEnemyCount(stageToPlay);
-
     const enemy = getEnemyForStageSlot(stageToPlay, 1, enemyCount);
     const firstQuestion = generateQuestion(stageToPlay, getAnswerCount(), []);
 
     sounds.click();
+    clearScheduledUiEffects();
 
     set({
       screen: "battle",
       enemy,
       currentQuestion: firstQuestion,
       lastHit: null,
-      activeSpell: getSpellTier(state.player.streak),
+      activeSpell: "none",
       floatingMessage: enemy.isBoss ? "👑 Boss Fight!" : "",
       mistakes: 0,
       earnedStars: 0,
@@ -188,10 +246,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
       recentQuestionKeys: [firstQuestion.key],
       hintCharges: state.upgrades.hint,
       hiddenAnswers: [],
+      player: {
+        ...state.player,
+        streak: 0,
+      },
+      selectedStage: stageToPlay,
     });
 
     if (enemy.isBoss) {
-      setTimeout(() => set({ floatingMessage: "" }), 900);
+      scheduleUiEffect(() => set({ floatingMessage: "" }), 900);
     }
   },
 
@@ -199,9 +262,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const state = get();
 
     sounds.click();
+    clearScheduledUiEffects();
 
-    const shouldShowReward =
-      state.completedWasLatest && state.unlockedStage % 3 === 0;
+    const shouldShowReward = shouldOfferRewardForStage(
+      state.completedStage,
+      state.completedWasLatest,
+    );
 
     if (shouldShowReward) {
       set({
@@ -213,18 +279,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       screen: "map",
-      selectedStage: state.unlockedStage,
-      earnedStars: 0,
-      completedStage: null,
-      completedWasLatest: false,
-      correctAnswersOnCurrentEnemy: 0,
-      stageEnemyIndex: 1,
-      stageEnemyCount: getStageEnemyCount(state.unlockedStage),
-      lessonQuestionIndex: 0,
-      lessonQuestionCount: getLessonQuestionCount(state.unlockedStage),
-      recentQuestionKeys: [],
-      hintCharges: state.upgrades.hint,
-      hiddenAnswers: [],
+      selectedStage: clampStage(state.unlockedStage),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
     });
   },
 
@@ -233,11 +289,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     if (!state.currentQuestion || state.hintCharges <= 0) return;
 
-    const question = state.currentQuestion;
-
-    const wrongAnswers = question.answers.filter(
+    const wrongAnswers = state.currentQuestion.answers.filter(
       (answer) =>
-        answer !== question.correctAnswer &&
+        answer !== state.currentQuestion?.correctAnswer &&
         !state.hiddenAnswers.includes(answer),
     );
 
@@ -266,17 +320,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const spell = getSpellTier(nextStreak);
       const bonusDamage = getSpellBonusDamage(spell);
       const totalDamage = state.player.damage + bonusDamage;
-      const spellLabel = getSpellLabel(spell);
 
-      const rawEnemyHp = state.enemy.hp - totalDamage;
+      const nextEnemyHp = Math.max(0, state.enemy.hp - totalDamage);
       const nextScore = state.score + 10 + bonusDamage * 5;
+      const nextBestScore = Math.max(state.bestScore, nextScore);
       const nextCorrectAnswers = state.correctAnswersOnCurrentEnemy + 1;
       const nextLessonQuestionIndex = state.lessonQuestionIndex + 1;
 
       const reachedAnswerGoal =
         nextCorrectAnswers >= state.enemy.requiredCorrectAnswers;
-
-      const canDefeatEnemy = rawEnemyHp <= 0 && reachedAnswerGoal;
+      const canDefeatEnemy = nextEnemyHp <= 0 && reachedAnswerGoal;
 
       if (canDefeatEnemy) {
         const xpResult = applyXpGain(
@@ -307,25 +360,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
             state.recentQuestionKeys,
           );
 
-          const currentSave = loadSave();
+          saveProgress(
+            createSavePayload({
+              ...state,
+              bestScore: nextBestScore,
+              playerLevel: xpResult.level,
+              playerXp: xpResult.xp,
+              player: updatedPlayer,
+            }),
+          );
 
-          saveProgress({
-            ...currentSave,
-            bestScore: Math.max(currentSave.bestScore, nextScore),
-            playerLevel: xpResult.level,
-            playerXp: xpResult.xp,
-            unlockedStage: state.unlockedStage,
-            upgrades: currentSave.upgrades,
-            stars: currentSave.stars,
-            player: {
-              hp: updatedPlayer.hp,
-              maxHp: updatedPlayer.maxHp,
-              coins: updatedPlayer.coins,
-              damage: updatedPlayer.damage,
-            },
-          });
+          clearScheduledUiEffects();
 
           set({
+            bestScore: nextBestScore,
             playerLevel: xpResult.level,
             playerXp: xpResult.xp,
             score: nextScore,
@@ -342,7 +390,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             hiddenAnswers: [],
           });
 
-          setTimeout(() => {
+          scheduleUiEffect(() => {
             set({
               enemy: nextEnemy,
               currentQuestion: nextQuestion,
@@ -355,7 +403,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             });
           }, 420);
 
-          setTimeout(() => {
+          scheduleUiEffect(() => {
             set({
               lastHit: null,
               floatingMessage: "",
@@ -371,35 +419,31 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
         const isLatestStage = stageToPlay === state.unlockedStage;
         const nextUnlockedStage = isLatestStage
-          ? state.unlockedStage + 1
+          ? clampStage(state.unlockedStage + 1)
           : state.unlockedStage;
+        const earnedStars = getStarsForMistakes(state.mistakes);
+        const nextStars = {
+          ...state.stars,
+          [stageToPlay]: Math.max(state.stars[stageToPlay] ?? 0, earnedStars),
+        };
 
-        let stars = 1;
-        if (state.mistakes === 0) stars = 3;
-        else if (state.mistakes === 1) stars = 2;
+        saveProgress(
+          createSavePayload({
+            ...state,
+            bestScore: nextBestScore,
+            stars: nextStars,
+            playerLevel: xpResult.level,
+            playerXp: xpResult.xp,
+            unlockedStage: nextUnlockedStage,
+            player: updatedPlayer,
+          }),
+        );
 
-        const currentSave = loadSave();
-
-        saveProgress({
-          ...currentSave,
-          bestScore: Math.max(currentSave.bestScore, nextScore),
-          playerLevel: xpResult.level,
-          playerXp: xpResult.xp,
-          unlockedStage: nextUnlockedStage,
-          stars: {
-            ...currentSave.stars,
-            [stageToPlay]: Math.max(currentSave.stars[stageToPlay] ?? 0, stars),
-          },
-          upgrades: currentSave.upgrades,
-          player: {
-            hp: updatedPlayer.hp,
-            maxHp: updatedPlayer.maxHp,
-            coins: updatedPlayer.coins,
-            damage: updatedPlayer.damage,
-          },
-        });
+        clearScheduledUiEffects();
 
         set({
+          bestScore: nextBestScore,
+          stars: nextStars,
           playerLevel: xpResult.level,
           playerXp: xpResult.xp,
           unlockedStage: nextUnlockedStage,
@@ -416,7 +460,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             : `✨ Stage Cleared! +${state.enemy.xpReward} XP`,
           player: updatedPlayer,
           mistakes: 0,
-          earnedStars: stars,
+          earnedStars,
           completedStage: stageToPlay,
           completedWasLatest: isLatestStage,
           correctAnswersOnCurrentEnemy: 0,
@@ -425,10 +469,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
           lessonQuestionIndex: nextLessonQuestionIndex,
           lessonQuestionCount: getLessonQuestionCount(nextUnlockedStage),
           recentQuestionKeys: [],
+          hintCharges: state.upgrades.hint,
           hiddenAnswers: [],
         });
 
-        setTimeout(() => {
+        scheduleUiEffect(() => {
           set({
             lastHit: null,
             floatingMessage: "",
@@ -438,8 +483,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
         return;
       }
 
-      const displayedEnemyHp = Math.max(1, rawEnemyHp);
-
       const nextQuestion = generateQuestion(
         stageToPlay,
         getAnswerCount(),
@@ -447,15 +490,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       );
 
       set({
+        bestScore: nextBestScore,
         score: nextScore,
         enemy: {
           ...state.enemy,
-          hp: displayedEnemyHp,
+          hp: nextEnemyHp,
         },
         currentQuestion: nextQuestion,
         lastHit: "correct",
         activeSpell: spell,
-        floatingMessage: spell === "none" ? "✨ Great!" : spellLabel,
+        floatingMessage: spell === "none" ? "✨ Nice!" : "",
         player: {
           ...state.player,
           streak: nextStreak,
@@ -469,7 +513,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         hiddenAnswers: [],
       });
 
-      setTimeout(() => {
+      scheduleUiEffect(() => {
         set({
           lastHit: null,
           floatingMessage: "",
@@ -485,7 +529,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newMistakes = state.mistakes + 1;
 
     if (newPlayerHp <= 0) {
-      updateBestScore(state.score);
+      const nextBestScore = Math.max(state.bestScore, state.score);
       sounds.gameOver();
 
       const revivedPlayer = {
@@ -494,23 +538,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
         streak: 0,
       };
 
-      const currentSave = loadSave();
+      saveProgress(
+        createSavePayload({
+          ...state,
+          bestScore: nextBestScore,
+          player: revivedPlayer,
+        }),
+      );
 
-      saveProgress({
-        ...currentSave,
-        playerLevel: state.playerLevel,
-        playerXp: state.playerXp,
-        unlockedStage: state.unlockedStage,
-        upgrades: currentSave.upgrades,
-        player: {
-          hp: revivedPlayer.hp,
-          maxHp: revivedPlayer.maxHp,
-          coins: revivedPlayer.coins,
-          damage: revivedPlayer.damage,
-        },
-      });
+      clearScheduledUiEffects();
 
       set({
+        bestScore: nextBestScore,
         screen: "gameover",
         player: revivedPlayer,
         floatingMessage: isBoss ? "👑 Boss hit!" : "💥 Oops!",
@@ -519,7 +558,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         lastHit: "wrong",
       });
 
-      setTimeout(() => {
+      scheduleUiEffect(() => {
         set({
           lastHit: null,
           floatingMessage: "",
@@ -541,20 +580,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       state.recentQuestionKeys,
     );
 
-    const currentSave = loadSave();
-
-    saveProgress({
-      ...currentSave,
-      playerLevel: state.playerLevel,
-      playerXp: state.playerXp,
-      unlockedStage: state.unlockedStage,
-      player: {
-        hp: updatedPlayer.hp,
-        maxHp: updatedPlayer.maxHp,
-        coins: updatedPlayer.coins,
-        damage: updatedPlayer.damage,
-      },
-    });
+    saveProgress(
+      createSavePayload({
+        ...state,
+        player: updatedPlayer,
+      }),
+    );
 
     set({
       currentQuestion: nextQuestion,
@@ -570,7 +601,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hiddenAnswers: [],
     });
 
-    setTimeout(() => {
+    scheduleUiEffect(() => {
       set({
         lastHit: null,
         floatingMessage: "",
@@ -580,9 +611,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   pickReward: (upgrade) => {
     sounds.click();
+    clearScheduledUiEffects();
 
     const state = get();
-    let updatedPlayer = { ...state.player };
+    const updatedPlayer = { ...state.player };
 
     if (upgrade.type === "heal") {
       updatedPlayer.hp = Math.min(
@@ -599,33 +631,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
       updatedPlayer.coins += upgrade.value;
     }
 
-    const currentSave = loadSave();
-
-    saveProgress({
-      ...currentSave,
-      playerLevel: state.playerLevel,
-      playerXp: state.playerXp,
-      unlockedStage: state.unlockedStage,
-      player: {
-        hp: updatedPlayer.hp,
-        maxHp: updatedPlayer.maxHp,
-        coins: updatedPlayer.coins,
-        damage: updatedPlayer.damage,
-      },
-    });
+    saveProgress(
+      createSavePayload({
+        ...state,
+        player: updatedPlayer,
+      }),
+    );
 
     set({
       screen: "map",
       player: updatedPlayer,
-      selectedStage: state.unlockedStage,
+      selectedStage: clampStage(state.unlockedStage),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
     });
   },
 
   buyItem: (id) => {
     const state = get();
-    const currentSave = loadSave();
 
-    let player = { ...state.player };
+    const player = { ...state.player };
     const upgrades = { ...state.upgrades };
 
     if (id === "hp") {
@@ -669,19 +693,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     sounds.click();
 
-    saveProgress({
-      ...currentSave,
-      playerLevel: state.playerLevel,
-      playerXp: state.playerXp,
-      unlockedStage: state.unlockedStage,
-      upgrades,
-      player: {
-        hp: player.hp,
-        maxHp: player.maxHp,
-        coins: player.coins,
-        damage: player.damage,
-      },
-    });
+    saveProgress(
+      createSavePayload({
+        ...state,
+        upgrades,
+        player,
+      }),
+    );
 
     set({
       player,

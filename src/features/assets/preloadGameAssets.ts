@@ -4,55 +4,27 @@ import ice from "../../assets/images/backgrounds/ice.png";
 import lava from "../../assets/images/backgrounds/lava.png";
 import castle from "../../assets/images/backgrounds/castle.png";
 
-import e1 from "../../assets/images/enemies/e1.png";
-import e2 from "../../assets/images/enemies/e2.png";
-import e3 from "../../assets/images/enemies/e3.png";
-import e4 from "../../assets/images/enemies/e4.png";
-import e5 from "../../assets/images/enemies/e5.png";
-import e6 from "../../assets/images/enemies/e6.png";
-import e7 from "../../assets/images/enemies/e7.png";
-import e8 from "../../assets/images/enemies/e8.png";
-import e9 from "../../assets/images/enemies/e9.png";
-import e10 from "../../assets/images/enemies/e10.png";
-import e11 from "../../assets/images/enemies/e11.png";
-import e12 from "../../assets/images/enemies/e12.png";
-import e13 from "../../assets/images/enemies/e13.png";
-import e14 from "../../assets/images/enemies/e14.png";
-import e15 from "../../assets/images/enemies/e15.png";
-import e16 from "../../assets/images/enemies/e16.png";
+import { bossEnemies, starterEnemies } from "../../data/enemies";
+import { uiIcons } from "../../data/uiAssets";
 
-const assetUrls = [
-  forest,
-  cave,
-  ice,
-  lava,
-  castle,
-  e1,
-  e2,
-  e3,
-  e4,
-  e5,
-  e6,
-  e7,
-  e8,
-  e9,
-  e10,
-  e11,
-  e12,
-  e13,
-  e14,
-  e15,
-  e16,
-];
-
-let preloadPromise: Promise<void> | null = null;
+const backgroundUrls = [forest, cave, ice, lava, castle];
+const enemyUrls = [...starterEnemies, ...bossEnemies].map((enemy) => enemy.emoji);
+const iconUrls = Object.values(uiIcons);
+const preloaded = new Set<string>();
 
 function preloadImage(src: string): Promise<void> {
+  if (preloaded.has(src)) {
+    return Promise.resolve();
+  }
+
   return new Promise((resolve) => {
     const img = new Image();
     img.src = src;
 
-    const done = () => resolve();
+    const done = () => {
+      preloaded.add(src);
+      resolve();
+    };
 
     img.onload = async () => {
       try {
@@ -60,7 +32,7 @@ function preloadImage(src: string): Promise<void> {
           await img.decode();
         }
       } catch {
-        //
+        // ignore decode errors
       }
       done();
     };
@@ -70,8 +42,19 @@ function preloadImage(src: string): Promise<void> {
 }
 
 export function preloadGameAssets(): Promise<void> {
-  if (preloadPromise) return preloadPromise;
+  return Promise.all([...backgroundUrls, ...iconUrls].map(preloadImage)).then(() => undefined);
+}
 
-  preloadPromise = Promise.all(assetUrls.map(preloadImage)).then(() => {});
-  return preloadPromise;
+export function preloadStageAssets(stage: number): Promise<void> {
+  const startIndex = ((stage - 1) * 3) % enemyUrls.length;
+  const enemyWindow = Array.from({ length: 5 }, (_, index) => enemyUrls[(startIndex + index) % enemyUrls.length]);
+
+  const urls = new Set<string>([
+    ...backgroundUrls,
+    ...iconUrls,
+    ...enemyWindow,
+    bossEnemies[Math.floor((stage - 1) / 5) % bossEnemies.length].emoji,
+  ]);
+
+  return Promise.all([...urls].map(preloadImage)).then(() => undefined);
 }

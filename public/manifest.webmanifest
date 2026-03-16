@@ -1,0 +1,10 @@
+{
+  "name": "Math Quest",
+  "short_name": "Math Quest",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "Math Quest mobile game"
+}

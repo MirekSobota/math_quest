@@ -1,4 +1,9 @@
 import { useEffect, useState } from "react";
+import { uiIcons } from "../../data/uiAssets";
+import { GameIcon } from "../ui/GameIcon";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { Screen } from "../layout/Screen";
 
 type Props = {
   level: number;
@@ -7,66 +12,82 @@ type Props = {
   onContinue: () => void;
 };
 
-export function LevelCompleteScreen({
-  level,
-  stars,
-  wasLatest,
-  onContinue,
-}: Props) {
+export function LevelCompleteScreen({ level, stars, wasLatest, onContinue }: Props) {
   const [visibleStars, setVisibleStars] = useState(0);
 
   useEffect(() => {
-    setVisibleStars(0);
-
     let current = 0;
-    const interval = window.setInterval(() => {
+    let timeoutId: number | null = null;
+
+    const revealNext = () => {
       current += 1;
       setVisibleStars(current);
 
-      if (current >= stars) {
-        window.clearInterval(interval);
+      if (current < stars) {
+        timeoutId = window.setTimeout(revealNext, 280);
       }
-    }, 350);
+    };
 
-    return () => window.clearInterval(interval);
+    timeoutId = window.setTimeout(revealNext, 220);
+
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, [stars]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 text-center">
-      <div className="text-6xl">🏆</div>
+    <Screen className="justify-center">
+      <div className="menu-hero-grid grid items-center gap-3">
+        <Card tone="strong" className="space-y-4 text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] bg-white/8">
+            <GameIcon src={uiIcons.reward} alt="Reward" size="xl" />
+          </div>
+          <div>
+            <h2 className="compact-header-title text-3xl font-black md:text-4xl">Stage {level}</h2>
+            <p className="compact-copy mt-2 text-white/80">Clear!</p>
+          </div>
 
-      <div>
-        <h2 className="text-3xl font-black">Stage Complete!</h2>
-        <p className="mt-2 text-white/70">Stage {level}</p>
-      </div>
+          <div className="rounded-3xl bg-white/5 px-6 py-5">
+            <div className="mt-2 flex justify-center gap-2 text-5xl">
+              {[1, 2, 3].map((star) => {
+                const filled = star <= visibleStars;
 
-      <div className="rounded-3xl bg-white/10 px-8 py-6">
-        <div className="text-sm text-white/70">Stars earned</div>
+                return (
+                  <span
+                    key={star}
+                    className={`transition-all duration-300 ${
+                      filled ? "scale-100 opacity-100" : "scale-75 opacity-35"
+                    }`}
+                  >
+                    ⭐
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
 
-        <div className="mt-4 flex gap-2 text-5xl">
-          {[1, 2, 3].map((star) => {
-            const filled = star <= visibleStars;
+        <div className="flex flex-col gap-3">
+          <Card tone="soft" className="grid grid-cols-3 gap-2 text-center text-sm font-bold text-white/90">
+            <div className="rounded-2xl bg-white/6 p-3">
+              <GameIcon src={uiIcons.reward} alt="Stars" size="lg" className="mx-auto" />
+            </div>
+            <div className="rounded-2xl bg-white/6 p-3">
+              <GameIcon src={uiIcons.play} alt="Next" size="lg" className="mx-auto" />
+            </div>
+            <div className="rounded-2xl bg-white/6 p-3">
+              <GameIcon src={uiIcons.map} alt="Map" size="lg" className="mx-auto" />
+            </div>
+          </Card>
 
-            return (
-              <span
-                key={star}
-                className={`transition-all duration-300 ${
-                  filled ? "scale-110 opacity-100" : "scale-90 opacity-40"
-                }`}
-              >
-                {filled ? "⭐" : "☆"}
-              </span>
-            );
-          })}
+          <Button onClick={onContinue} size="lg" block attention className="uppercase tracking-[0.22em]">
+            <GameIcon src={wasLatest ? uiIcons.play : uiIcons.map} alt="Continue" size="md" />
+            {wasLatest ? "NEXT" : "MAP"}
+          </Button>
         </div>
       </div>
-
-      <button
-        onClick={onContinue}
-        className="rounded-2xl bg-violet-500 px-6 py-4 text-xl font-bold"
-      >
-        {wasLatest ? "Continue" : "Back to Map"}
-      </button>
-    </div>
+    </Screen>
   );
 }
