@@ -4,8 +4,10 @@ export function getUpgradePrice(base: number, level: number) {
 
 export function getUpgradeMax(type: string) {
   if (type === "hp") return 5;
-  if (type === "damage") return 5;
   if (type === "hint") return 3;
+  if (type === "shield") return 3;
+  if (type === "secondChance") return 2;
+  if (type === "starBonus") return 1;
 
   return 99;
 }

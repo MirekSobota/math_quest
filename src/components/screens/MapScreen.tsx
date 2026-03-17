@@ -50,9 +50,9 @@ export function MapScreen({
   const isBossStage = selectedStage % 5 === 0;
 
   return (
-    <Screen className="min-h-0">
-      <Card tone="strong">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+    <Screen className="min-h-0 overflow-hidden">
+      <Card tone="strong" className="map-header-card shrink-0">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
             <div className="rounded-3xl bg-white/8 p-3">
               <GameIcon src={uiIcons.map} alt="Map" size="lg" />
@@ -88,16 +88,16 @@ export function MapScreen({
         </div>
       </Card>
 
-      <div className="game-two-pane grid min-h-0 flex-1 gap-3">
-        <Card tone="soft" className="flex min-h-0 flex-col">
+      <div className="map-main-grid grid min-h-0 flex-1 gap-3 overflow-hidden">
+        <Card tone="soft" className="flex min-h-0 flex-col overflow-hidden">
           <div className="mb-3 flex items-center justify-between text-sm font-bold text-white/70">
             <span>
               {nodes[0]}–{nodes[nodes.length - 1]}
             </span>
-            <span>👇</span>
+            <span>Tap a stage</span>
           </div>
 
-          <div className="grid flex-1 grid-cols-5 gap-2 sm:gap-3">
+          <div className="map-stage-grid grid flex-1 grid-cols-5 gap-2 sm:gap-3">
             {nodes.map((node) => {
               const isCurrentProgress = node === unlockedStage;
               const isSelected = node === selectedStage;
@@ -139,7 +139,7 @@ export function MapScreen({
           </div>
         </Card>
 
-        <Card className="flex min-h-0 flex-col justify-between">
+        <Card className="map-stage-card flex min-h-0 flex-col justify-between gap-3 overflow-hidden">
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-white/10 text-3xl">
@@ -152,38 +152,40 @@ export function MapScreen({
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-2 text-center text-sm font-black text-white/90">
-              <div className="rounded-2xl bg-white/6 p-3">{isBossStage ? "👑 BOSS" : "⚔️ GO"}</div>
+              <div className="rounded-2xl bg-white/6 p-3">{isBossStage ? "👑 Boss only" : "⚔️ 3 foes"}</div>
               <div className="rounded-2xl bg-white/6 p-3">
                 {selectedStars > 0 ? `⭐ ${selectedStars}/3` : "⭐ 0/3"}
               </div>
             </div>
           </div>
 
-          <div className="mt-4">
-            <Button
-              onClick={onPlay}
-              disabled={isSelectedLocked}
-              className="uppercase text-[1.15rem] tracking-[0.22em]"
-              size="lg"
-              block
-              attention
-            >
-              <GameIcon src={uiIcons.play} alt="Play" size="md" />
-              {isSelectedLocked ? "LOCKED" : selectedStage === unlockedStage ? "PLAY" : "REPLAY"}
+          <div className="grid grid-cols-2 gap-3">
+            <Button onClick={onShop} variant="warning" size="md" block>
+              <GameIcon src={uiIcons.reward} alt="Shop" size="md" />
+              SHOP
             </Button>
 
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Button onClick={onShop} variant="warning" size="md">
-                <GameIcon src={uiIcons.reward} alt="Shop" size="md" />
-                SHOP
-              </Button>
-
-              <Button onClick={onStats} variant="secondary" size="md">
-                <GameIcon src={uiIcons.heart} alt="Hero" size="md" />
-                HERO
-              </Button>
-            </div>
+            <Button onClick={onStats} variant="secondary" size="md" block>
+              <GameIcon src={uiIcons.heart} alt="Hero" size="md" />
+              HERO
+            </Button>
           </div>
+        </Card>
+      </div>
+
+      <div className="map-bottom-bar shrink-0">
+        <Card className="map-bottom-card p-3 md:p-4">
+          <Button
+            onClick={onPlay}
+            disabled={isSelectedLocked}
+            className="uppercase text-[1.15rem] tracking-[0.22em]"
+            size="lg"
+            block
+            attention
+          >
+            <GameIcon src={uiIcons.play} alt="Play" size="md" />
+            {isSelectedLocked ? "LOCKED" : selectedStage === unlockedStage ? "PLAY" : "REPLAY"}
+          </Button>
         </Card>
       </div>
     </Screen>

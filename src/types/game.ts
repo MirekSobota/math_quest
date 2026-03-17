@@ -28,26 +28,22 @@ export type Enemy = {
   maxHp: number;
   emoji: string;
   isBoss?: boolean;
-  requiredCorrectAnswers: number;
   xpReward: number;
 };
 
 export type Player = {
   hp: number;
   maxHp: number;
-  energy: number;
   coins: number;
-  streak: number;
-  damage: number;
 };
 
-export type UpgradeAccent = "emerald" | "rose" | "amber" | "violet";
+export type UpgradeAccent = "emerald" | "rose" | "amber" | "violet" | "slate";
 
 export type Upgrade = {
   id: string;
   title: string;
   description: string;
-  type: "heal" | "damage" | "coins";
+  type: "heart" | "hint" | "shield" | "secondChance" | "starBonus" | "coins";
   value: number;
   icon?: string;
   shortLabel?: string;
@@ -62,10 +58,12 @@ export type SaveData = {
   stars: Record<number, number>;
   upgrades: {
     hp: number;
-    damage: number;
     hint: number;
+    shield: number;
+    secondChance: number;
+    starBonus: number;
   };
-  player: Pick<Player, "hp" | "maxHp" | "coins" | "damage">;
+  player: Pick<Player, "hp" | "maxHp" | "coins">;
 };
 
 export type GameState = {
@@ -88,15 +86,12 @@ export type GameState = {
   rewardOptions: Upgrade[];
 
   lastHit: "correct" | "wrong" | null;
-  activeSpell: SpellTier;
 
   mistakes: number;
 
   earnedStars: number;
   completedStage: number | null;
   completedWasLatest: boolean;
-
-  correctAnswersOnCurrentEnemy: number;
 
   stageEnemyIndex: number;
   stageEnemyCount: number;
@@ -106,5 +101,7 @@ export type GameState = {
 
   recentQuestionKeys: string[];
   hintCharges: number;
+  shieldCharges: number;
+  secondChanceCharges: number;
   hiddenAnswers: number[];
 };

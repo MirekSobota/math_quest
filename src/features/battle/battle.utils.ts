@@ -1,10 +1,6 @@
 import type { Enemy } from "../../types/game";
 import { starterEnemies, bossEnemies } from "../../data/enemies";
-import {
-  getEnemyBaseHp,
-  getRequiredHitsForEnemy,
-  isBossEnemyInStage,
-} from "./stage.utils";
+import { getEnemyBaseHp, isBossEnemyInStage } from "./stage.utils";
 
 function getBossEnemy(stage: number) {
   return bossEnemies[Math.floor((stage - 1) / 5) % bossEnemies.length];
@@ -31,7 +27,6 @@ export function getEnemyForStageSlot(
     hp: maxHp,
     maxHp,
     isBoss,
-    requiredCorrectAnswers: getRequiredHitsForEnemy(isBoss),
-    xpReward: isBoss ? 28 + stage * 3 : 10 + stage * 2,
+    xpReward: isBoss ? 32 + stage * 3 : 10 + stage * 2,
   };
 }

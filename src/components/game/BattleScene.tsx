@@ -8,19 +8,10 @@ function getProgressPercent(value: number, max: number) {
 type Props = {
   enemy: Enemy;
   lastHit: "correct" | "wrong" | null;
-  correctAnswersOnCurrentEnemy: number;
 };
 
-export function BattleScene({
-  enemy,
-  lastHit,
-  correctAnswersOnCurrentEnemy,
-}: Props) {
+export function BattleScene({ enemy, lastHit }: Props) {
   const hpPercent = getProgressPercent(enemy.hp, enemy.maxHp);
-  const hitsPercent = getProgressPercent(
-    Math.min(correctAnswersOnCurrentEnemy, enemy.requiredCorrectAnswers),
-    enemy.requiredCorrectAnswers,
-  );
 
   return (
     <div
@@ -35,8 +26,24 @@ export function BattleScene({
         <span className="rounded-full bg-white/14 px-3 py-1">⭐ {enemy.xpReward}</span>
       </div>
 
-      <div className="mt-2 rounded-full bg-white/16 px-4 py-2 text-xl font-black leading-none shadow-[0_10px_24px_rgba(15,23,42,0.16)] md:text-3xl">
+      <div className="mt-2 rounded-full bg-white/16 px-4 py-2 text-lg font-black leading-none shadow-[0_10px_24px_rgba(15,23,42,0.16)] md:text-2xl">
         {enemy.name}
+      </div>
+
+      <div className="mt-2 rounded-2xl bg-white/10 px-3 py-2.5 text-left text-[11px] font-black text-white/92 md:text-xs">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span>❤️ HP</span>
+          <span>
+            {enemy.hp}/{enemy.maxHp}
+          </span>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
+          <motion.div
+            className="h-full rounded-full bg-emerald-300"
+            animate={{ width: `${hpPercent}%` }}
+            transition={{ duration: 0.22 }}
+          />
+        </div>
       </div>
 
       <div className="mt-2 flex min-h-0 flex-1 items-center justify-center rounded-[28px] bg-white/8 px-3 py-2">
@@ -62,41 +69,6 @@ export function BattleScene({
             />
           </motion.div>
         </AnimatePresence>
-      </div>
-
-      <div className="mt-2 grid grid-cols-2 gap-2 text-left text-[11px] font-black text-white/92 md:text-xs">
-        <div className="rounded-2xl bg-white/10 px-3 py-2.5">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span>❤️ HP</span>
-            <span>
-              {enemy.hp}/{enemy.maxHp}
-            </span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
-            <motion.div
-              className="h-full rounded-full bg-emerald-300"
-              animate={{ width: `${hpPercent}%` }}
-              transition={{ duration: 0.22 }}
-            />
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-white/10 px-3 py-2.5">
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <span>✅ Hits</span>
-            <span>
-              {Math.min(correctAnswersOnCurrentEnemy, enemy.requiredCorrectAnswers)}/
-              {enemy.requiredCorrectAnswers}
-            </span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-white/20">
-            <motion.div
-              className="h-full rounded-full bg-amber-300"
-              animate={{ width: `${hitsPercent}%` }}
-              transition={{ duration: 0.22 }}
-            />
-          </div>
-        </div>
       </div>
     </div>
   );

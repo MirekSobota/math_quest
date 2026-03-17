@@ -31,16 +31,16 @@ export default function App() {
     enemy,
     currentQuestion,
     rewardOptions,
-    activeSpell,
     lastHit,
     floatingMessage,
     earnedStars,
     completedStage,
     completedWasLatest,
-    correctAnswersOnCurrentEnemy,
     stageEnemyIndex,
     stageEnemyCount,
     hintCharges,
+    shieldCharges,
+    secondChanceCharges,
     hiddenAnswers,
     startGame,
     goToMap,
@@ -146,13 +146,13 @@ export default function App() {
             player={player}
             enemy={enemy}
             question={currentQuestion}
-            activeSpell={activeSpell}
             lastHit={lastHit}
             floatingMessage={floatingMessage}
-            correctAnswersOnCurrentEnemy={correctAnswersOnCurrentEnemy}
             stageEnemyIndex={stageEnemyIndex}
             stageEnemyCount={stageEnemyCount}
             hintCharges={hintCharges}
+            shieldCharges={shieldCharges}
+            secondChanceCharges={secondChanceCharges}
             hiddenAnswers={hiddenAnswers}
             onUseHint={useHint}
             onAnswer={answerQuestion}

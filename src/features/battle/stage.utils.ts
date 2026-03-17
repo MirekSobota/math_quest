@@ -1,5 +1,5 @@
 export function getStageEnemyCount(stage: number): number {
-  return stage % 5 === 0 ? 4 : 3;
+  return stage % 5 === 0 ? 1 : 3;
 }
 
 export function isBossEnemyInStage(
@@ -10,13 +10,9 @@ export function isBossEnemyInStage(
   return stage % 5 === 0 && stageEnemyIndex === stageEnemyCount;
 }
 
-export function getRequiredHitsForEnemy(isBoss: boolean): number {
-  return isBoss ? 4 : 2;
-}
-
 export function getEnemyBaseHp(stage: number, isBoss: boolean) {
   if (isBoss) {
-    return 5 + Math.floor((stage - 1) / 3);
+    return 8 + Math.floor((stage - 1) / 5);
   }
 
   return 2 + Math.floor((stage - 1) / 4);

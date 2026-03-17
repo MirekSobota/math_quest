@@ -7,11 +7,13 @@ import { Screen } from "../layout/Screen";
 
 type UpgradeState = {
   hp: number;
-  damage: number;
   hint: number;
+  shield: number;
+  secondChance: number;
+  starBonus: number;
 };
 
-type ShopItemId = "hp" | "damage" | "hint";
+type ShopItemId = "hp" | "hint" | "shield" | "secondChance" | "starBonus";
 
 type Props = {
   coins: number;
@@ -31,24 +33,38 @@ type ShopItem = {
 const items: ShopItem[] = [
   {
     id: "hp",
-    title: "Hearts",
-    badge: "+1 HP",
+    title: "Heart",
+    badge: "+1 max heart",
     icon: uiIcons.heart,
     basePrice: 40,
   },
   {
-    id: "damage",
-    title: "Attack",
-    badge: "+1 DMG",
-    icon: uiIcons.attack,
-    basePrice: 60,
-  },
-  {
     id: "hint",
-    title: "Hints",
-    badge: "+1",
+    title: "Hint",
+    badge: "+1 each stage",
     icon: uiIcons.hint,
     basePrice: 55,
+  },
+  {
+    id: "shield",
+    title: "Shield",
+    badge: "blocks 1 mistake",
+    icon: uiIcons.attack,
+    basePrice: 70,
+  },
+  {
+    id: "secondChance",
+    title: "Second chance",
+    badge: "revive once",
+    icon: uiIcons.play,
+    basePrice: 90,
+  },
+  {
+    id: "starBonus",
+    title: "Star bonus",
+    badge: "+1 stage star",
+    icon: uiIcons.reward,
+    basePrice: 120,
   },
 ];
 

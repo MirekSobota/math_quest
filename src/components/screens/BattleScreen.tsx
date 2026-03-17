@@ -7,20 +7,20 @@ import { FloatingText } from "../game/FloatingText";
 import { GameIcon } from "../ui/GameIcon";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
-import type { Enemy, Player, Question, SpellTier } from "../../types/game";
+import type { Enemy, Player, Question } from "../../types/game";
 
 type Props = {
   stage: number;
   player: Player;
   enemy: Enemy;
   question: Question;
-  activeSpell: SpellTier;
   lastHit: "correct" | "wrong" | null;
   floatingMessage: string;
-  correctAnswersOnCurrentEnemy: number;
   stageEnemyIndex: number;
   stageEnemyCount: number;
   hintCharges: number;
+  shieldCharges: number;
+  secondChanceCharges: number;
   hiddenAnswers: number[];
   onUseHint: () => void;
   onAnswer: (answer: number) => void;
@@ -31,13 +31,13 @@ export function BattleScreen({
   player,
   enemy,
   question,
-  activeSpell,
   lastHit,
   floatingMessage,
-  correctAnswersOnCurrentEnemy,
   stageEnemyIndex,
   stageEnemyCount,
   hintCharges,
+  shieldCharges,
+  secondChanceCharges,
   hiddenAnswers,
   onUseHint,
   onAnswer,
@@ -55,7 +55,7 @@ export function BattleScreen({
         </div>
 
         <div className="flex flex-wrap justify-end gap-2">
-          <Badge tone={enemy.isBoss ? "amber" : "violet"}>{enemy.isBoss ? "👑" : "👾"}</Badge>
+          <Badge tone={enemy.isBoss ? "amber" : "violet"}>{enemy.isBoss ? "👑" : `👾 ${stageEnemyIndex}/${stageEnemyCount}`}</Badge>
           <Badge tone="slate">
             <span className="flex items-center gap-1">
               <GameIcon src={uiIcons.reward} alt="Coins" size="sm" />
@@ -74,17 +74,13 @@ export function BattleScreen({
             enemyHp={enemy.hp}
             enemyMaxHp={enemy.maxHp}
             playerHp={player.hp}
-            playerDamage={player.damage}
-            streak={player.streak}
-            activeSpell={activeSpell}
+            playerMaxHp={player.maxHp}
+            shieldCharges={shieldCharges}
+            hintCharges={hintCharges}
           />
 
           <div className="min-h-0 flex-1">
-            <BattleScene
-              enemy={enemy}
-              lastHit={lastHit}
-              correctAnswersOnCurrentEnemy={correctAnswersOnCurrentEnemy}
-            />
+            <BattleScene enemy={enemy} lastHit={lastHit} />
           </div>
         </div>
 
@@ -92,23 +88,30 @@ export function BattleScreen({
           <QuestionCard text={question.text} />
 
           <div className="rounded-3xl bg-slate-950/60 px-3 py-2.5 md:px-4 md:py-3">
-            <div className="flex items-center justify-between gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
               <div className="flex items-center gap-2 text-white/92">
                 <GameIcon src={uiIcons.hint} alt="Hints" size="md" />
                 <span className="text-lg font-black">x{hintCharges}</span>
               </div>
-              <Button
-                onClick={onUseHint}
-                disabled={hintCharges <= 0}
-                size="sm"
-                variant="warning"
-                attention={hintCharges > 0}
-                className="min-w-[112px]"
-              >
-                <GameIcon src={uiIcons.hint} alt="Hint" size="sm" />
-                Hint
-              </Button>
+              <div className="rounded-2xl bg-white/8 px-3 py-2 text-sm font-black text-white/85">
+                🛡️ {shieldCharges}
+              </div>
+              <div className="rounded-2xl bg-white/8 px-3 py-2 text-sm font-black text-white/85">
+                💖 {secondChanceCharges}
+              </div>
             </div>
+
+            <Button
+              onClick={onUseHint}
+              disabled={hintCharges <= 0}
+              size="sm"
+              variant="warning"
+              attention={hintCharges > 0}
+              className="mt-3 w-full"
+            >
+              <GameIcon src={uiIcons.hint} alt="Hint" size="sm" />
+              Hint
+            </Button>
           </div>
 
           <div className="min-h-0 flex-1">

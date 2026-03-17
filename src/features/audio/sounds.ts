@@ -1,4 +1,5 @@
 import bossWinTrack from "../../assets/audio/bossWin.mp3";
+import loseTrack from "../../assets/audio/lose.mp3";
 
 type Tone = {
   frequency: number;
@@ -97,10 +98,5 @@ export const sounds = {
       { frequency: 240, duration: 0.1, type: "sawtooth", gain: 0.02 },
     ]),
   bossWin: () => playAudioFile(bossWinTrack),
-  gameOver: () =>
-    playSequence([
-      { frequency: 330, duration: 0.08, type: "sawtooth", gain: 0.02 },
-      { frequency: 247, duration: 0.1, type: "sawtooth", gain: 0.02 },
-      { frequency: 196, duration: 0.18, type: "sawtooth", gain: 0.025 },
-    ]),
+  gameOver: () => playAudioFile(loseTrack, 0.62),
 };

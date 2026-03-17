@@ -13,6 +13,7 @@ const accentClasses = {
   rose: "from-rose-300/28 via-rose-400/18 to-rose-600/12 border-rose-300/36",
   amber: "from-amber-300/28 via-amber-400/18 to-amber-600/12 border-amber-300/36",
   violet: "from-violet-300/28 via-violet-400/18 to-fuchsia-600/12 border-violet-300/36",
+  slate: "from-slate-200/18 via-slate-300/12 to-slate-500/8 border-white/18",
 };
 
 export function RewardModal({ options, onPick }: Props) {

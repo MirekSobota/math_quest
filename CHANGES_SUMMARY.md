@@ -1,26 +1,42 @@
-# Latest polish pass
+# Sprint 1 + Sprint 2
 
-## UX / layout
-- simplified the first screen and removed the confusing extra icon rows
-- removed the duplicated `Play` presence from the hero area
-- kept one clear main CTA only
-- tightened the battle layout for short mobile landscape screens
-- reduced topbar, question card and answer button height for phone landscape
-- constrained monster image height so the enemy name no longer sits behind the sprite
-- moved the enemy name into its own pill above the image for better readability
-- changed the hint action from `USE` to `Hint`
-- reduced meaningless floating copy during normal hits
+## Sprint 1
+- fixed mobile map flow so the stage start button stays visible
+- rebuilt the map screen layout for landscape phones
+- simplified the start screen
+- removed DMG and Hits from gameplay and UI
+- rebuilt battle UI around one clear enemy HP system
+- boss stages are now boss-only stages
 
-## Combat readability
-- spell feedback is now shown in the HUD as icon + bonus damage instead of barely visible `Fireball` text
-- floating message styling is more compact and readable
-- question card now uses less copy and more focus on the math itself
+## Sprint 2
+- new permanent upgrades in shop and rewards:
+  - Heart
+  - Hint
+  - Shield
+  - Second Chance
+  - Star Bonus
+- Shield blocks a wrong answer without losing a heart
+- Second Chance revives the player with 1 heart
+- Star Bonus adds +1 stage star, capped at 3
 
 ## Audio
-- added support for a real MP3 boss-win track
-- wired the currently available uploaded MP3 as the temporary boss victory clip
-- kept synthetic fallback sounds for click/correct/wrong/game over
+- boss win track stays connected
+- uploaded `lose.mp3` is now used on game over
 
-## Notes
-- only one MP3 file was available in the workspace (`lose.mp3`), so that file was used as the temporary boss-win track slot
-- when the remaining 2 audio files are uploaded, they can be mapped cleanly in the same sound system
+## Main files changed
+- `src/store/gameStore.ts`
+- `src/components/screens/MapScreen.tsx`
+- `src/components/screens/BattleScreen.tsx`
+- `src/components/screens/MenuScreen.tsx`
+- `src/components/screens/ShopScreen.tsx`
+- `src/components/screens/StatsScreen.tsx`
+- `src/components/game/ProgressHud.tsx`
+- `src/components/game/BattleScene.tsx`
+- `src/features/battle/stage.utils.ts`
+- `src/features/battle/battle.utils.ts`
+- `src/features/progression/storage.ts`
+- `src/features/audio/sounds.ts`
+- `src/data/rewards.ts`
+- `src/features/shop/shop.utils.ts`
+- `src/types/game.ts`
+- `src/index.css`

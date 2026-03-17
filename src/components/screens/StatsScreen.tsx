@@ -10,12 +10,13 @@ type Props = {
     hp: number;
     maxHp: number;
     coins: number;
-    damage: number;
   };
   upgrades: {
     hp: number;
-    damage: number;
     hint: number;
+    shield: number;
+    secondChance: number;
+    starBonus: number;
   };
   playerLevel: number;
   playerXp: number;
@@ -96,7 +97,7 @@ export function StatsScreen({
           </Card>
 
           <Card>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               <div className="rounded-2xl bg-white/5 p-4 text-center">
                 <GameIcon src={uiIcons.heart} alt="HP" size="lg" className="mx-auto" />
                 <div className="mt-2 font-bold">
@@ -105,13 +106,23 @@ export function StatsScreen({
               </div>
 
               <div className="rounded-2xl bg-white/5 p-4 text-center">
-                <GameIcon src={uiIcons.attack} alt="Damage" size="lg" className="mx-auto" />
-                <div className="mt-2 font-bold">{player.damage}</div>
+                <GameIcon src={uiIcons.hint} alt="Hints" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">{upgrades.hint}</div>
               </div>
 
               <div className="rounded-2xl bg-white/5 p-4 text-center">
-                <GameIcon src={uiIcons.hint} alt="Hints" size="lg" className="mx-auto" />
-                <div className="mt-2 font-bold">{upgrades.hint}</div>
+                <GameIcon src={uiIcons.attack} alt="Shield" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">{upgrades.shield}</div>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4 text-center">
+                <GameIcon src={uiIcons.play} alt="Second chance" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">{upgrades.secondChance}</div>
+              </div>
+
+              <div className="rounded-2xl bg-white/5 p-4 text-center">
+                <GameIcon src={uiIcons.reward} alt="Star bonus" size="lg" className="mx-auto" />
+                <div className="mt-2 font-bold">{upgrades.starBonus}</div>
               </div>
             </div>
           </Card>
@@ -130,18 +141,34 @@ export function StatsScreen({
 
               <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
                 <div className="flex items-center gap-3">
-                  <GameIcon src={uiIcons.attack} alt="Attack" size="md" />
-                  <span className="font-bold text-white/75">Attack</span>
-                </div>
-                <span className="font-black">Lv {upgrades.damage}</span>
-              </div>
-
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
-                <div className="flex items-center gap-3">
                   <GameIcon src={uiIcons.hint} alt="Hints" size="md" />
                   <span className="font-bold text-white/75">Hints</span>
                 </div>
                 <span className="font-black">Lv {upgrades.hint}</span>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <GameIcon src={uiIcons.attack} alt="Shield" size="md" />
+                  <span className="font-bold text-white/75">Shield</span>
+                </div>
+                <span className="font-black">Lv {upgrades.shield}</span>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <GameIcon src={uiIcons.play} alt="Second chance" size="md" />
+                  <span className="font-bold text-white/75">Second chance</span>
+                </div>
+                <span className="font-black">Lv {upgrades.secondChance}</span>
+              </div>
+
+              <div className="flex items-center justify-between rounded-2xl bg-white/5 p-4">
+                <div className="flex items-center gap-3">
+                  <GameIcon src={uiIcons.reward} alt="Star bonus" size="md" />
+                  <span className="font-bold text-white/75">Star bonus</span>
+                </div>
+                <span className="font-black">Lv {upgrades.starBonus}</span>
               </div>
             </div>
           </Card>

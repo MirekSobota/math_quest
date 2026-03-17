@@ -10,14 +10,15 @@ export const defaultSave: SaveData = {
   stars: {},
   upgrades: {
     hp: 0,
-    damage: 0,
     hint: 0,
+    shield: 0,
+    secondChance: 0,
+    starBonus: 0,
   },
   player: {
     hp: 3,
     maxHp: 3,
     coins: 0,
-    damage: 1,
   },
 };
 
@@ -81,20 +82,24 @@ export function loadSave(): SaveData {
       stars: Object.fromEntries(starsEntries),
       upgrades: {
         hp: normalizeNumber(parsed?.upgrades?.hp, fallback.upgrades.hp),
-        damage: normalizeNumber(
-          parsed?.upgrades?.damage,
-          fallback.upgrades.damage,
-        ),
         hint: normalizeNumber(
           parsed?.upgrades?.hint ?? parsed?.upgrades?.time,
           fallback.upgrades.hint,
+        ),
+        shield: normalizeNumber(parsed?.upgrades?.shield, fallback.upgrades.shield),
+        secondChance: normalizeNumber(
+          parsed?.upgrades?.secondChance,
+          fallback.upgrades.secondChance,
+        ),
+        starBonus: normalizeNumber(
+          parsed?.upgrades?.starBonus,
+          fallback.upgrades.starBonus,
         ),
       },
       player: {
         hp: normalizeNumber(parsed?.player?.hp, fallback.player.hp),
         maxHp: normalizeNumber(parsed?.player?.maxHp, fallback.player.maxHp),
         coins: normalizeNumber(parsed?.player?.coins, fallback.player.coins),
-        damage: normalizeNumber(parsed?.player?.damage, fallback.player.damage),
       },
     };
   } catch {

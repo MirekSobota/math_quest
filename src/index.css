@@ -68,7 +68,8 @@ button {
 .game-two-pane,
 .shop-grid,
 .stats-layout,
-.reward-grid {
+.reward-grid,
+.map-main-grid {
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -136,7 +137,17 @@ button {
 }
 
 .battle-enemy-image {
-  max-height: min(24vh, 190px);
+  max-height: min(22vh, 180px);
+}
+
+.map-stage-grid {
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.map-stage-card,
+.map-header-card,
+.map-bottom-card {
+  backdrop-filter: blur(12px);
 }
 
 @keyframes buttonSparkle {
@@ -197,16 +208,12 @@ button {
 }
 
 @media (orientation: landscape) and (pointer: coarse), (min-width: 960px) {
-  .screen-shell {
-    gap: 12px;
-  }
-
   .menu-hero-grid {
-    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.75fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .game-two-pane {
-    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+  .map-main-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr);
     align-items: stretch;
   }
 
@@ -220,7 +227,7 @@ button {
   }
 
   .battle-layout {
-    grid-template-columns: minmax(0, 1.05fr) minmax(330px, 0.95fr);
+    grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.98fr);
     align-items: stretch;
   }
 
@@ -237,7 +244,7 @@ button {
     --card-radius: 22px;
   }
 
-  .compact-landscape-gap {
+  .screen-shell {
     gap: 10px;
   }
 
@@ -246,20 +253,20 @@ button {
   }
 
   .map-node {
-    min-height: 74px;
+    min-height: 72px;
   }
 
   .question-card {
-    padding: 14px 14px 16px;
+    padding: 12px 14px 14px;
   }
 
   .question-eyebrow {
-    font-size: 0.86rem;
+    font-size: 0.8rem;
     letter-spacing: 0.18em;
   }
 
   .question-text {
-    font-size: clamp(1.9rem, 3vw, 2.8rem);
+    font-size: clamp(1.6rem, 2.6vw, 2.4rem);
     line-height: 1.04;
   }
 
@@ -269,11 +276,7 @@ button {
   }
 
   .answer-button {
-    min-height: 64px;
-  }
-
-  .battle-enemy-image {
-    max-height: min(22vh, 170px);
+    min-height: 62px;
   }
 }
 
@@ -283,14 +286,6 @@ button {
     --app-gap: 8px;
     --card-pad: 14px;
     --card-radius: 20px;
-  }
-
-  .screen-shell {
-    gap: 8px;
-  }
-
-  .compact-landscape-gap {
-    gap: 8px;
   }
 
   .compact-header-title {
@@ -304,12 +299,8 @@ button {
     line-height: 1.35;
   }
 
-  .compact-chip {
-    padding: 10px 12px;
-  }
-
   .map-node {
-    min-height: 64px;
+    min-height: 62px;
   }
 
   .play-button-main {
@@ -323,20 +314,20 @@ button {
   }
 
   .question-card {
-    padding: 12px 12px 14px;
+    padding: 10px 12px 12px;
   }
 
   .question-text {
-    font-size: clamp(1.55rem, 2.5vw, 2.3rem);
+    font-size: clamp(1.35rem, 2.3vw, 2rem);
   }
 
   .answer-button {
-    min-height: 54px;
+    min-height: 52px;
     padding: 10px 12px;
   }
 
   .battle-enemy-image {
-    max-height: min(18vh, 132px);
+    max-height: min(17vh, 126px);
   }
 
   .battle-topbar {
@@ -361,7 +352,7 @@ button {
   }
 
   .question-text {
-    font-size: clamp(1.35rem, 2.1vw, 2rem);
+    font-size: clamp(1.2rem, 2vw, 1.85rem);
   }
 
   .answer-grid {
@@ -369,11 +360,15 @@ button {
   }
 
   .answer-button {
-    min-height: 48px;
+    min-height: 46px;
     border-radius: 18px;
   }
 
   .battle-enemy-image {
-    max-height: min(16vh, 112px);
+    max-height: min(15vh, 100px);
+  }
+
+  .map-node {
+    min-height: 56px;
   }
 }

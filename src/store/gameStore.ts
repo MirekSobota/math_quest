@@ -4,15 +4,13 @@ import type { GameState, SaveData, Upgrade } from "../types/game";
 import { clampStage } from "../data/levels";
 import { generateQuestion } from "../features/questions/questionGenerator";
 import { getRewardOptions } from "../features/progression/reward.utils";
-import { getStarsForMistakes, shouldOfferRewardForStage } from "../features/progression/progression.utils";
+import {
+  getStarsForMistakes,
+  shouldOfferRewardForStage,
+} from "../features/progression/progression.utils";
 import { loadSave, saveProgress } from "../features/progression/storage";
 
 import { getEnemyForStageSlot } from "../features/battle/battle.utils";
-import {
-  getSpellBonusDamage,
-  getSpellTier,
-} from "../features/battle/spells.utils";
-
 import { applyXpGain } from "../features/progression/xp.utils";
 import { getUpgradePrice, getUpgradeMax } from "../features/shop/shop.utils";
 import {
@@ -21,14 +19,16 @@ import {
 } from "../features/battle/stage.utils";
 import { sounds } from "../features/audio/sounds";
 
-type ShopItemId = "hp" | "damage" | "hint";
+type ShopItemId = "hp" | "hint" | "shield" | "secondChance" | "starBonus";
 
 type GameStore = GameState & {
   floatingMessage: string;
   upgrades: {
     hp: number;
-    damage: number;
     hint: number;
+    shield: number;
+    secondChance: number;
+    starBonus: number;
   };
   startGame: () => void;
   goToMap: () => void;
@@ -67,10 +67,7 @@ function scheduleUiEffect(callback: () => void, delay: number) {
   activeTimeouts.add(timeoutId);
 }
 
-function appendRecentQuestion(
-  recentQuestionKeys: string[],
-  key: string,
-): string[] {
+function appendRecentQuestion(recentQuestionKeys: string[], key: string): string[] {
   return [...recentQuestionKeys, key].slice(-5);
 }
 
@@ -97,32 +94,79 @@ function createSavePayload(
       hp: state.player.hp,
       maxHp: state.player.maxHp,
       coins: state.player.coins,
-      damage: state.player.damage,
     },
   };
 }
 
-function getMapResetState(selectedStage: number, hintLevel: number) {
+function getMapResetState(
+  selectedStage: number,
+  upgrades: Pick<GameStore["upgrades"], "hint" | "shield" | "secondChance">,
+) {
   return {
     enemy: null,
     currentQuestion: null,
     rewardOptions: [],
     lastHit: null,
-    activeSpell: "none" as const,
     floatingMessage: "",
     mistakes: 0,
     earnedStars: 0,
     completedStage: null,
     completedWasLatest: false,
-    correctAnswersOnCurrentEnemy: 0,
     stageEnemyIndex: 1,
     stageEnemyCount: getStageEnemyCount(selectedStage),
     lessonQuestionIndex: 0,
     lessonQuestionCount: getLessonQuestionCount(selectedStage),
     recentQuestionKeys: [],
-    hintCharges: hintLevel,
+    hintCharges: upgrades.hint,
+    shieldCharges: upgrades.shield,
+    secondChanceCharges: upgrades.secondChance,
     hiddenAnswers: [],
   };
+}
+
+function applyPermanentUpgrade(state: GameStore, upgrade: Upgrade) {
+  const player = { ...state.player };
+  const upgrades = { ...state.upgrades };
+
+  if (upgrade.type === "heart") {
+    const value = Math.min(upgrade.value, getUpgradeMax("hp") - upgrades.hp);
+    if (value > 0) {
+      upgrades.hp += value;
+      player.maxHp += value;
+      player.hp += value;
+    }
+  }
+
+  if (upgrade.type === "hint") {
+    upgrades.hint = Math.min(getUpgradeMax("hint"), upgrades.hint + upgrade.value);
+  }
+
+  if (upgrade.type === "shield") {
+    upgrades.shield = Math.min(
+      getUpgradeMax("shield"),
+      upgrades.shield + upgrade.value,
+    );
+  }
+
+  if (upgrade.type === "secondChance") {
+    upgrades.secondChance = Math.min(
+      getUpgradeMax("secondChance"),
+      upgrades.secondChance + upgrade.value,
+    );
+  }
+
+  if (upgrade.type === "starBonus") {
+    upgrades.starBonus = Math.min(
+      getUpgradeMax("starBonus"),
+      upgrades.starBonus + upgrade.value,
+    );
+  }
+
+  if (upgrade.type === "coins") {
+    player.coins += upgrade.value;
+  }
+
+  return { player, upgrades };
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -142,10 +186,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   player: {
     hp: initialSave.player.hp,
     maxHp: initialSave.player.maxHp,
-    energy: 0,
     coins: initialSave.player.coins,
-    streak: 0,
-    damage: initialSave.player.damage,
   },
 
   upgrades: initialSave.upgrades,
@@ -155,15 +196,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   rewardOptions: [],
 
   lastHit: null,
-  activeSpell: "none",
 
   mistakes: 0,
 
   earnedStars: 0,
   completedStage: null,
   completedWasLatest: false,
-
-  correctAnswersOnCurrentEnemy: 0,
 
   stageEnemyIndex: 1,
   stageEnemyCount: 3,
@@ -172,7 +210,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lessonQuestionCount: 5,
 
   recentQuestionKeys: [],
-  hintCharges: 0,
+  hintCharges: initialSave.upgrades.hint,
+  shieldCharges: initialSave.upgrades.shield,
+  secondChanceCharges: initialSave.upgrades.secondChance,
   hiddenAnswers: [],
 
   floatingMessage: "",
@@ -184,7 +224,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       screen: "map",
       selectedStage: clampStage(state.unlockedStage),
-      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades),
     }));
   },
 
@@ -194,7 +234,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       screen: "map",
       selectedStage: clampStage(state.unlockedStage),
-      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades),
     }));
   },
 
@@ -232,23 +272,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
       enemy,
       currentQuestion: firstQuestion,
       lastHit: null,
-      activeSpell: "none",
-      floatingMessage: enemy.isBoss ? "👑 Boss Fight!" : "",
+      floatingMessage: enemy.isBoss ? "👑 Boss fight!" : "",
       mistakes: 0,
       earnedStars: 0,
       completedStage: null,
       completedWasLatest: false,
-      correctAnswersOnCurrentEnemy: 0,
       stageEnemyIndex: 1,
       stageEnemyCount: enemyCount,
       lessonQuestionIndex: 0,
       lessonQuestionCount: getLessonQuestionCount(stageToPlay),
       recentQuestionKeys: [firstQuestion.key],
       hintCharges: state.upgrades.hint,
+      shieldCharges: state.upgrades.shield,
+      secondChanceCharges: state.upgrades.secondChance,
       hiddenAnswers: [],
       player: {
         ...state.player,
-        streak: 0,
+        hp: state.player.maxHp,
       },
       selectedStage: stageToPlay,
     });
@@ -280,7 +320,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       screen: "map",
       selectedStage: clampStage(state.unlockedStage),
-      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
+      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades),
     });
   },
 
@@ -316,22 +356,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (isCorrect) {
       sounds.correct();
 
-      const nextStreak = state.player.streak + 1;
-      const spell = getSpellTier(nextStreak);
-      const bonusDamage = getSpellBonusDamage(spell);
-      const totalDamage = state.player.damage + bonusDamage;
-
-      const nextEnemyHp = Math.max(0, state.enemy.hp - totalDamage);
-      const nextScore = state.score + 10 + bonusDamage * 5;
+      const nextEnemyHp = Math.max(0, state.enemy.hp - 1);
+      const nextScore = state.score + 10;
       const nextBestScore = Math.max(state.bestScore, nextScore);
-      const nextCorrectAnswers = state.correctAnswersOnCurrentEnemy + 1;
       const nextLessonQuestionIndex = state.lessonQuestionIndex + 1;
 
-      const reachedAnswerGoal =
-        nextCorrectAnswers >= state.enemy.requiredCorrectAnswers;
-      const canDefeatEnemy = nextEnemyHp <= 0 && reachedAnswerGoal;
-
-      if (canDefeatEnemy) {
+      if (nextEnemyHp <= 0) {
         const xpResult = applyXpGain(
           state.playerLevel,
           state.playerXp,
@@ -340,8 +370,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
         const updatedPlayer = {
           ...state.player,
-          coins: state.player.coins + 5 + bonusDamage + (isBoss ? 10 : 0),
-          streak: nextStreak,
+          coins: state.player.coins + (isBoss ? 16 : 5),
         };
 
         const nextEnemyIndex = state.stageEnemyIndex + 1;
@@ -380,12 +409,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
             enemy: null,
             currentQuestion: null,
             lastHit: "correct",
-            activeSpell: spell,
-            floatingMessage: nextEnemy.isBoss
-              ? "👑 Boss incoming!"
-              : "✨ Enemy defeated!",
+            floatingMessage: nextEnemy.isBoss ? "👑 Boss!" : "✨ Next foe!",
             player: updatedPlayer,
-            correctAnswersOnCurrentEnemy: 0,
             lessonQuestionIndex: nextLessonQuestionIndex,
             hiddenAnswers: [],
           });
@@ -399,16 +424,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
                 state.recentQuestionKeys,
                 nextQuestion.key,
               ),
-              floatingMessage: nextEnemy.isBoss ? "👑 Boss Fight!" : "",
+              floatingMessage: nextEnemy.isBoss ? "👑 Boss fight!" : "",
             });
-          }, 420);
+          }, 360);
 
           scheduleUiEffect(() => {
             set({
               lastHit: null,
               floatingMessage: "",
             });
-          }, 900);
+          }, 860);
 
           return;
         }
@@ -421,7 +446,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         const nextUnlockedStage = isLatestStage
           ? clampStage(state.unlockedStage + 1)
           : state.unlockedStage;
-        const earnedStars = getStarsForMistakes(state.mistakes);
+        const earnedStars = Math.min(
+          3,
+          getStarsForMistakes(state.mistakes) + Math.min(1, state.upgrades.starBonus),
+        );
         const nextStars = {
           ...state.stars,
           [stageToPlay]: Math.max(state.stars[stageToPlay] ?? 0, earnedStars),
@@ -454,22 +482,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
           currentQuestion: null,
           rewardOptions: [],
           lastHit: "correct",
-          activeSpell: spell,
           floatingMessage: isBoss
-            ? `👑 Boss Stage Cleared! +${state.enemy.xpReward} XP`
-            : `✨ Stage Cleared! +${state.enemy.xpReward} XP`,
+            ? `👑 Boss cleared! +${state.enemy.xpReward} XP`
+            : `✨ Stage cleared! +${state.enemy.xpReward} XP`,
           player: updatedPlayer,
           mistakes: 0,
           earnedStars,
           completedStage: stageToPlay,
           completedWasLatest: isLatestStage,
-          correctAnswersOnCurrentEnemy: 0,
           stageEnemyIndex: 1,
           stageEnemyCount: getStageEnemyCount(nextUnlockedStage),
           lessonQuestionIndex: nextLessonQuestionIndex,
           lessonQuestionCount: getLessonQuestionCount(nextUnlockedStage),
           recentQuestionKeys: [],
           hintCharges: state.upgrades.hint,
+          shieldCharges: state.upgrades.shield,
+          secondChanceCharges: state.upgrades.secondChance,
           hiddenAnswers: [],
         });
 
@@ -498,13 +526,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         },
         currentQuestion: nextQuestion,
         lastHit: "correct",
-        activeSpell: spell,
-        floatingMessage: spell === "none" ? "✨ Nice!" : "",
-        player: {
-          ...state.player,
-          streak: nextStreak,
-        },
-        correctAnswersOnCurrentEnemy: nextCorrectAnswers,
+        floatingMessage: "✨ Nice!",
         lessonQuestionIndex: nextLessonQuestionIndex,
         recentQuestionKeys: appendRecentQuestion(
           state.recentQuestionKeys,
@@ -518,15 +540,78 @@ export const useGameStore = create<GameStore>((set, get) => ({
           lastHit: null,
           floatingMessage: "",
         });
-      }, 700);
+      }, 650);
 
       return;
     }
 
     sounds.wrong();
 
+    const nextQuestion = generateQuestion(
+      stageToPlay,
+      getAnswerCount(),
+      state.recentQuestionKeys,
+    );
+    const nextRecentQuestionKeys = appendRecentQuestion(
+      state.recentQuestionKeys,
+      nextQuestion.key,
+    );
+    const nextMistakes = state.mistakes + 1;
+
+    if (state.shieldCharges > 0) {
+      set({
+        currentQuestion: nextQuestion,
+        shieldCharges: state.shieldCharges - 1,
+        mistakes: nextMistakes,
+        lastHit: "wrong",
+        floatingMessage: "🛡️ Shield!",
+        recentQuestionKeys: nextRecentQuestionKeys,
+        hiddenAnswers: [],
+      });
+
+      scheduleUiEffect(() => {
+        set({
+          lastHit: null,
+          floatingMessage: "",
+        });
+      }, 700);
+      return;
+    }
+
     const newPlayerHp = state.player.hp - 1;
-    const newMistakes = state.mistakes + 1;
+
+    if (newPlayerHp <= 0 && state.secondChanceCharges > 0) {
+      const revivedPlayer = {
+        ...state.player,
+        hp: 1,
+      };
+
+      saveProgress(
+        createSavePayload({
+          ...state,
+          player: revivedPlayer,
+        }),
+      );
+
+      set({
+        currentQuestion: nextQuestion,
+        player: revivedPlayer,
+        secondChanceCharges: state.secondChanceCharges - 1,
+        mistakes: nextMistakes,
+        lastHit: "wrong",
+        floatingMessage: "💖 One more chance!",
+        recentQuestionKeys: nextRecentQuestionKeys,
+        hiddenAnswers: [],
+      });
+
+      scheduleUiEffect(() => {
+        set({
+          lastHit: null,
+          floatingMessage: "",
+        });
+      }, 800);
+      return;
+    }
 
     if (newPlayerHp <= 0) {
       const nextBestScore = Math.max(state.bestScore, state.score);
@@ -535,7 +620,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const revivedPlayer = {
         ...state.player,
         hp: state.player.maxHp,
-        streak: 0,
       };
 
       saveProgress(
@@ -553,8 +637,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         screen: "gameover",
         player: revivedPlayer,
         floatingMessage: isBoss ? "👑 Boss hit!" : "💥 Oops!",
-        mistakes: newMistakes,
-        activeSpell: "none",
+        mistakes: nextMistakes,
         lastHit: "wrong",
       });
 
@@ -571,14 +654,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const updatedPlayer = {
       ...state.player,
       hp: newPlayerHp,
-      streak: 0,
     };
-
-    const nextQuestion = generateQuestion(
-      stageToPlay,
-      getAnswerCount(),
-      state.recentQuestionKeys,
-    );
 
     saveProgress(
       createSavePayload({
@@ -590,14 +666,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       currentQuestion: nextQuestion,
       player: updatedPlayer,
-      mistakes: newMistakes,
-      activeSpell: "none",
+      mistakes: nextMistakes,
       lastHit: "wrong",
       floatingMessage: "💥 Try again!",
-      recentQuestionKeys: appendRecentQuestion(
-        state.recentQuestionKeys,
-        nextQuestion.key,
-      ),
+      recentQuestionKeys: nextRecentQuestionKeys,
       hiddenAnswers: [],
     });
 
@@ -614,35 +686,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     clearScheduledUiEffects();
 
     const state = get();
-    const updatedPlayer = { ...state.player };
-
-    if (upgrade.type === "heal") {
-      updatedPlayer.hp = Math.min(
-        updatedPlayer.maxHp,
-        updatedPlayer.hp + upgrade.value,
-      );
-    }
-
-    if (upgrade.type === "damage") {
-      updatedPlayer.damage += upgrade.value;
-    }
-
-    if (upgrade.type === "coins") {
-      updatedPlayer.coins += upgrade.value;
-    }
+    const { player, upgrades } = applyPermanentUpgrade(state, upgrade);
 
     saveProgress(
       createSavePayload({
         ...state,
-        player: updatedPlayer,
+        player,
+        upgrades,
       }),
     );
 
     set({
       screen: "map",
-      player: updatedPlayer,
+      player,
+      upgrades,
       selectedStage: clampStage(state.unlockedStage),
-      ...getMapResetState(clampStage(state.unlockedStage), state.upgrades.hint),
+      ...getMapResetState(clampStage(state.unlockedStage), upgrades),
     });
   },
 
@@ -652,44 +711,46 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const player = { ...state.player };
     const upgrades = { ...state.upgrades };
 
+    const buyUpgrade = (key: keyof typeof upgrades, basePrice: number) => {
+      const currentLevel = upgrades[key];
+      const maxLevel = getUpgradeMax(key);
+      if (currentLevel >= maxLevel) return false;
+
+      const price = getUpgradePrice(basePrice, currentLevel);
+      if (player.coins < price) return false;
+
+      player.coins -= price;
+      upgrades[key] += 1;
+      return true;
+    };
+
+    let didBuy = false;
+
     if (id === "hp") {
-      const currentLevel = upgrades.hp;
-      const maxLevel = getUpgradeMax("hp");
-      if (currentLevel >= maxLevel) return;
-
-      const price = getUpgradePrice(40, currentLevel);
-      if (player.coins < price) return;
-
-      player.coins -= price;
-      upgrades.hp += 1;
-      player.maxHp += 1;
-      player.hp += 1;
-    }
-
-    if (id === "damage") {
-      const currentLevel = upgrades.damage;
-      const maxLevel = getUpgradeMax("damage");
-      if (currentLevel >= maxLevel) return;
-
-      const price = getUpgradePrice(60, currentLevel);
-      if (player.coins < price) return;
-
-      player.coins -= price;
-      upgrades.damage += 1;
-      player.damage += 1;
+      didBuy = buyUpgrade("hp", 40);
+      if (didBuy) {
+        player.maxHp += 1;
+        player.hp += 1;
+      }
     }
 
     if (id === "hint") {
-      const currentLevel = upgrades.hint;
-      const maxLevel = getUpgradeMax("hint");
-      if (currentLevel >= maxLevel) return;
-
-      const price = getUpgradePrice(55, currentLevel);
-      if (player.coins < price) return;
-
-      player.coins -= price;
-      upgrades.hint += 1;
+      didBuy = buyUpgrade("hint", 55);
     }
+
+    if (id === "shield") {
+      didBuy = buyUpgrade("shield", 70);
+    }
+
+    if (id === "secondChance") {
+      didBuy = buyUpgrade("secondChance", 90);
+    }
+
+    if (id === "starBonus") {
+      didBuy = buyUpgrade("starBonus", 120);
+    }
+
+    if (!didBuy) return;
 
     sounds.click();
 
